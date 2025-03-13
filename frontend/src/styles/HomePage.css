@@ -1,0 +1,114 @@
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.hero {
+  background: url('https://via.placeholder.com/1400x400?text=Auction+Banner') center/cover no-repeat;
+  color: #fff;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.hero-buttons .btn {
+  margin: 0 0.5rem;
+  padding: 1rem 2rem;
+}
+
+.featured-categories {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.category-card {
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+}
+
+.category-card img {
+  width: 100%;
+  display: block;
+}
+
+.category-info {
+  padding: 1rem;
+}
+
+/* Trending Auctions */
+.trending-auctions {
+  padding: 2rem 0;
+}
+
+/* Call-to-Action */
+.cta {
+  background-color: #f5f5f5;
+  padding: 3rem 1rem;
+  text-align: center;
+  border-radius: 8px;
+}
+.cta h2 {
+  margin-bottom: 1rem;
+}
+.cta p {
+  margin-bottom: 2rem;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: background-color 0.3s;
+  text-decoration: none;
+  color: #fff;
+}
+
+.btn.primary {
+  background-color: #4a6eff;
+}
+
+.btn.primary:hover {
+  background-color: #3a5bdf;
+}
+
+.btn.secondary {
+  background-color: #ff7a50;
+}
+
+.btn.secondary:hover {
+  background-color: #ff6240;
+}
