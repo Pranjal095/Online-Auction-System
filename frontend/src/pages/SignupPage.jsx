@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
+import { UserPlus, Mail, Lock, MapPin, Phone, Rocket } from "lucide-react";
 
 const SignupPage = () => {
   const [data, setData] = useState({
@@ -23,90 +24,86 @@ const SignupPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-base-100">
-      <div className="card w-full max-w-sm shadow-xl bg-base-200 p-6">
-        <h2 className="text-2xl font-bold mb-4 text-center">Sign Up</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium">
-              Username
-            </label>
-            <input
-              type="text"
-              name="username"
-              id="username"
-              className="input input-bordered w-full"
-              value={data.username}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              id="password"
-              className="input input-bordered w-full"
-              value={data.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              id="email"
-              className="input input-bordered w-full"
-              value={data.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="address" className="block text-sm font-medium">
-              Address
-            </label>
-            <input
-              type="text"
-              name="address"
-              id="address"
-              className="input input-bordered w-full"
-              value={data.address}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="mobile_number" className="block text-sm font-medium">
-              Mobile Number
-            </label>
-            <input
-              type="text"
-              name="mobile_number"
-              id="mobile_number"
-              className="input input-bordered w-full"
-              value={data.mobile_number}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div>
-            <button
-              type="submit"
-              className="btn btn-primary w-full"
-              disabled={isSigningUp}
-            >
+      <div className="grid grid-cols-1 md:grid-cols-2 w-full max-w-5xl shadow-xl rounded-lg overflow-hidden bg-base-200">
+        {/* Left Side - Signup Form */}
+        <div className="p-8 flex flex-col justify-center">
+          <h2 className="text-3xl font-bold mb-6 text-primary">Create an Account</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex items-center gap-2">
+              <UserPlus className="text-primary w-5 h-5" />
+              <input
+                type="text"
+                name="username"
+                placeholder="Username"
+                className="input input-bordered w-full"
+                value={data.username}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Lock className="text-primary w-5 h-5" />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                className="input input-bordered w-full"
+                value={data.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="text-primary w-5 h-5" />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                className="input input-bordered w-full"
+                value={data.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="text-primary w-5 h-5" />
+              <input
+                type="text"
+                name="address"
+                placeholder="Address"
+                className="input input-bordered w-full"
+                value={data.address}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="text-primary w-5 h-5" />
+              <input
+                type="text"
+                name="mobile_number"
+                placeholder="Mobile Number"
+                className="input input-bordered w-full"
+                value={data.mobile_number}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <button type="submit" className="btn btn-primary w-full" disabled={isSigningUp}>
               {isSigningUp ? "Signing Up..." : "Sign Up"}
             </button>
-          </div>
-          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-        </form>
+            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          </form>
+        </div>
+
+        {/* Right Side - Illustration */}
+        <div className="hidden md:flex flex-col items-center justify-center bg-primary text-primary-content p-8">
+          <Rocket className="w-16 h-16" />
+          <h2 className="text-3xl font-bold mt-4">Join the Auction Community</h2>
+          <p className="text-center mt-2 text-sm opacity-80">
+            Discover exclusive deals, bid on unique items, and sell effortlessly.
+          </p>
+        </div>
       </div>
     </div>
   );
