@@ -1,7 +1,7 @@
 import React from "react";
-// For now we're using dummy data; later you can import and use useAuctionStore to fetch real auctions.
-// import { useAuctionStore } from "../store/useAuctionStore";
+import { Link } from "react-router-dom";
 
+// Dummy auction data for now
 const dummyAuctions = [
   {
     auction_id: 1,
@@ -30,10 +30,10 @@ const dummyAuctions = [
 ];
 
 const AuctionsPage = () => {
-  // If you decide to use the store, you could do something like:
+  // Later, you can replace dummyAuctions with:
   // const { auctions, loading, fetchAuctions } = useAuctionStore();
   // React.useEffect(() => { fetchAuctions(); }, [fetchAuctions]);
-  // For now, we'll use our dummy data.
+
   const auctions = dummyAuctions;
 
   return (
@@ -44,7 +44,11 @@ const AuctionsPage = () => {
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
           {auctions.map((auction) => (
-            <div key={auction.auction_id} className="card bg-base-200 shadow-lg">
+            <Link
+              key={auction.auction_id}
+              to={`/auction/${auction.auction_id}`}
+              className="card bg-base-200 shadow-lg hover:shadow-2xl transition-shadow"
+            >
               <div className="card-body">
                 <h2 className="card-title">{auction.item.title}</h2>
                 <p>{auction.item.description}</p>
@@ -62,7 +66,7 @@ const AuctionsPage = () => {
                   {new Date(auction.end_time).toLocaleString()}
                 </p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

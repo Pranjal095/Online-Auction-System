@@ -6,7 +6,9 @@ import SettingsPage from './pages/SettingsPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import AuctionsPage from './pages/AuctionsPage'
+import AuctionPage from './pages/AuctionPage'
 import CreateAuctionPage from './pages/CreateAuctionPage'
+import ProfilePage from './pages/ProfilePage'
 
 import { useThemeStore } from './store/useThemeStore';
 import { useEffect } from 'react';
@@ -24,6 +26,9 @@ function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/auctions" element={<AuctionsPage />} />
           <Route path="/create-auction" element={<CreateAuctionPage />} />
+          <Route path="/auction/:auction_id" element={<AuctionPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
     </div>
   )
