@@ -1,13 +1,14 @@
 package schema
 
 type LoginRequest struct {
-    Username string `json:"username" binding:"required"`
-    Password string `json:"password" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 type RegisterRequest struct {
-    Username string `json:"username" binding:"required"`
-    Email    string `json:"email" binding:"required,email"`
-    Password string `json:"password" binding:"required"`
-    Name     string `json:"name" binding:"required"`
+	Username     string `json:"username" binding:"required"`
+	Email        string `json:"email" binding:"required,email"`
+	Password     string `json:"password" binding:"required"`
+	Address      string `json:"address" binding:"required"`
+	MobileNumber string `json:"mobile_number" binding:"required"`
 }

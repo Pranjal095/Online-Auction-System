@@ -8,20 +8,21 @@ import (
 )
 
 type User struct {
-	ID        int64
-	Username  string
-	Email     string
-	Name      string
-	Password  string
-	CreatedAt time.Time
+	ID           int64
+	Username     string
+	Password     string
+	Email        string
+	Address      string
+	MobileNumber string
+	CreatedAt    time.Time
 }
 
 // CreateUser inserts a new user with password hash
-func CreateUser(c context.Context, username, email, name, passwordHash string) (int64, error) {
-	var id int64
+func CreateUser(c context.Context, username, email, password, address, mobileNumber string) (int, error) {
+	var id int
 	err := config.DB.QueryRow(c,
-		"INSERT INTO users (username, email, name, password_hash, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-		username, email, name, passwordHash, time.Now()).Scan(&id)
+		"INSERT INTO users (username, email, password, address, mobile_number) VALUES ($1, $2, $3, $4, $5) RETURNING user_id",
+		username, email, password, address, mobileNumber).Scan(&id)
 	return id, err
 }
 
@@ -29,8 +30,8 @@ func CreateUser(c context.Context, username, email, name, passwordHash string) (
 func GetUserByUsername(c context.Context, username string) (User, error) {
 	var user User
 	err := config.DB.QueryRow(c,
-		"SELECT id, username, email, name, password_hash, created_at FROM users WHERE username = $1",
-		username).Scan(&user.ID, &user.Username, &user.Email, &user.Name, &user.Password, &user.CreatedAt)
+		"SELECT user_id, username, email, password, address, mobile_number, created_at FROM users WHERE username = $1",
+		username).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Address, &user.MobileNumber, &user.CreatedAt)
 	return user, err
 }
 

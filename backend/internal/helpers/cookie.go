@@ -21,7 +21,7 @@ func SetCookie(w http.ResponseWriter, key string, value string, daysExpire int) 
 		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
 		Path:     "/",
-		MaxAge:   daysExpire * 24 * 60 * 60, // seconds
+		MaxAge:   daysExpire * 24 * 60 * 60,
 		Domain: os.Getenv("COOKIE_DOMAIN"),
 	})
 }
