@@ -6,6 +6,7 @@ type ItemAuctionRequest struct {
 	Title       string    `json:"title" binding:"required"`
 	Description string    `json:"description"`
 	StartingBid float64   `json:"starting_bid" binding:"required"`
+	ImagePath   string    `json:"image_path" binding:"required"`
 	StartTime   time.Time `json:"start_time" binding:"required"`
 	EndTime     time.Time `json:"end_time" binding:"required"`
 }
@@ -23,6 +24,7 @@ type AuctionResponse struct {
 	EndTime     time.Time `json:"end_time"`
 	Status      string    `json:"status"`
 	BidCount    int       `json:"bid_count"`
+	ImagePath   string    `json:"image_path"`
 }
 
 type BidCreate struct {
@@ -35,4 +37,6 @@ type BidResponse struct {
 	BuyerName string    `json:"buyer_name"`
 	Amount    float64   `json:"amount"`
 	BidTime   time.Time `json:"bid_time"`
+	AuctionID int       `json:"auction_id"`
+	ItemTitle string    `json:"item_title"`
 }

@@ -9,11 +9,11 @@ import (
 )
 
 // CreateItem inserts a new item
-func CreateItem(c context.Context, sellerID int, title, description string, startingBid float64) (int, error) {
+func CreateItem(c context.Context, sellerID int, title, description string, startingBid float64, imagePath string) (int, error) {
 	var itemID int
 	err := config.DB.QueryRow(c,
-		"INSERT INTO items (seller_id, title, description, starting_bid) VALUES ($1, $2, $3, $4) RETURNING item_id",
-		sellerID, title, description, startingBid).Scan(&itemID)
+		"INSERT INTO items (seller_id, title, description, starting_bid, image_path) VALUES ($1, $2, $3, $4, $5) RETURNING item_id",
+		sellerID, title, description, startingBid, imagePath).Scan(&itemID)
 	return itemID, err
 }
 
@@ -41,7 +41,7 @@ func GetAuctions(c context.Context) ([]schema.AuctionResponse, error) {
         SELECT a.auction_id, a.item_id, i.title, i.description, 
                i.starting_bid, COALESCE(i.current_highest_bid, 0), 
                i.seller_id, u.username, 
-               a.start_time, a.end_time, a.status,
+               a.start_time, a.end_time, a.status, i.image_path, 
                (SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id)
         FROM auctions a
         JOIN items i ON a.item_id = i.item_id
@@ -60,7 +60,7 @@ func GetAuctions(c context.Context) ([]schema.AuctionResponse, error) {
 		err := rows.Scan(
 			&auction.AuctionID, &auction.ItemID, &auction.Title, &auction.Description,
 			&auction.StartingBid, &auction.HighestBid, &auction.SellerID, &auction.SellerName,
-			&auction.StartTime, &auction.EndTime, &auction.Status, &auction.BidCount,
+			&auction.StartTime, &auction.EndTime, &auction.Status, &auction.ImagePath, &auction.BidCount,
 		)
 		if err != nil {
 			return nil, err
@@ -75,18 +75,14 @@ func GetAuctions(c context.Context) ([]schema.AuctionResponse, error) {
 func GetAuctionByID(c context.Context, auctionID int) (schema.AuctionResponse, error) {
 	var auction schema.AuctionResponse
 	err := config.DB.QueryRow(c, `
-        SELECT a.auction_id, a.item_id, i.title, i.description, 
-               i.starting_bid, COALESCE(i.current_highest_bid, 0), 
-               i.seller_id, u.username, 
-               a.start_time, a.end_time, a.status,
-               (SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id)
+		SELECT a.auction_id, a.item_id, i.title, i.description, i.starting_bid, COALESCE(i.current_highest_bid, 0), i.seller_id, u.username, a.start_time, a.end_time, a.status, i.image_path, (SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id)
         FROM auctions a
         JOIN items i ON a.item_id = i.item_id
         JOIN users u ON i.seller_id = u.user_id
         WHERE a.auction_id = $1`, auctionID).Scan(
 		&auction.AuctionID, &auction.ItemID, &auction.Title, &auction.Description,
 		&auction.StartingBid, &auction.HighestBid, &auction.SellerID, &auction.SellerName,
-		&auction.StartTime, &auction.EndTime, &auction.Status, &auction.BidCount,
+		&auction.StartTime, &auction.EndTime, &auction.Status, &auction.ImagePath, &auction.BidCount,
 	)
 
 	return auction, err
@@ -144,9 +140,10 @@ func CreateBid(c context.Context, auctionID, buyerID int, amount float64) (int, 
 // GetBidsForAuction retrieves all bids for a specific auction
 func GetBidsForAuction(c context.Context, auctionID int) ([]schema.BidResponse, error) {
 	rows, err := config.DB.Query(c, `
-        SELECT b.bid_id, b.buyer_id, u.username, b.bid_amount, b.bid_time
+        SELECT b.bid_id, b.buyer_id, u.username, b.bid_amount, b.bid_time, b.auction_id, i.title
         FROM bids b
         JOIN users u ON b.buyer_id = u.user_id
+		JOIN items i ON i.auction_id = b.auction_id
         WHERE b.auction_id = $1
         ORDER BY b.bid_amount DESC`,
 		auctionID)
@@ -160,7 +157,7 @@ func GetBidsForAuction(c context.Context, auctionID int) ([]schema.BidResponse, 
 	for rows.Next() {
 		var bid schema.BidResponse
 		err := rows.Scan(
-			&bid.BidID, &bid.BuyerID, &bid.BuyerName, &bid.Amount, &bid.BidTime,
+			&bid.BidID, &bid.BuyerID, &bid.BuyerName, &bid.Amount, &bid.BidTime, &bid.AuctionID, &bid.ItemTitle,
 		)
 		if err != nil {
 			return nil, err
@@ -210,8 +207,7 @@ func GetUserAuctions(c context.Context, userID int) ([]schema.AuctionResponse, e
 // GetUserBids gets bids placed by a user
 func GetUserBids(c context.Context, userID int) ([]schema.BidResponse, error) {
 	rows, err := config.DB.Query(c, `
-        SELECT b.bid_id, b.buyer_id, u.username, b.bid_amount, b.bid_time, 
-               a.auction_id, i.title
+        SELECT b.bid_id, b.buyer_id, u.username, b.bid_amount, b.bid_time, a.auction_id, i.title
         FROM bids b
         JOIN users u ON b.buyer_id = u.user_id
         JOIN auctions a ON b.auction_id = a.auction_id
@@ -228,11 +224,9 @@ func GetUserBids(c context.Context, userID int) ([]schema.BidResponse, error) {
 	var bids []schema.BidResponse
 	for rows.Next() {
 		var bid schema.BidResponse
-		var auctionID int
-		var itemTitle string
 		err := rows.Scan(
 			&bid.BidID, &bid.BuyerID, &bid.BuyerName, &bid.Amount, &bid.BidTime,
-			&auctionID, &itemTitle,
+			&bid.AuctionID, &bid.ItemTitle,
 		)
 		if err != nil {
 			return nil, err

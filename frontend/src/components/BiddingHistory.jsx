@@ -1,12 +1,18 @@
 import React, { useEffect } from "react";
 import { useProfileStore } from "../store/useProfileStore";
+import { useNavigate } from "react-router-dom"
 
 const BiddingHistory = () => {
   const { fetchBiddingHistory, biddingHistory, loading } = useProfileStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchBiddingHistory();
   }, [fetchBiddingHistory]);
+
+  const handleClick = (id) => {
+    navigate(`/auction/${id}`);
+  } 
 
   if (loading && biddingHistory.length === 0) {
     return <p>Loading bidding history...</p>;
@@ -30,10 +36,14 @@ const BiddingHistory = () => {
           </thead>
           <tbody>
             {biddingHistory.map((bid, index) => (
-              <tr key={index}>
+              <tr 
+                key={index}
+                onClick={() => handleClick(bid.auction_id)}
+                className="cursor-pointer"
+              >
                 <td>{bid.auction_id}</td>
                 <td>{bid.item_title}</td>
-                <td>${bid.bid_amount}</td>
+                <td>${bid.amount}</td>
                 <td>{new Date(bid.bid_time).toLocaleString()}</td>
               </tr>
             ))}

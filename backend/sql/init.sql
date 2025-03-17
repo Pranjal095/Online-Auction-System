@@ -18,6 +18,7 @@ CREATE TABLE users (
     email VARCHAR(100) UNIQUE NOT NULL,
     address VARCHAR(255) NOT NULL,       -- single address per user
     mobile_number VARCHAR(20) NOT NULL,    -- single mobile number per user
+    is_admin BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -28,6 +29,7 @@ CREATE TABLE items (
     seller_id INTEGER NOT NULL REFERENCES users(user_id),
     title VARCHAR(255) NOT NULL,
     description TEXT,
+    image_path VARCHAR(255) NOT NULL,
     starting_bid DECIMAL(10,2) NOT NULL,
     current_highest_bid DECIMAL(10,2),
     current_highest_bidder INTEGER REFERENCES users(user_id),
@@ -70,9 +72,6 @@ CREATE TABLE auction_participants (
 CREATE TABLE transactions (
     transaction_id SERIAL PRIMARY KEY,
     auction_id INTEGER NOT NULL REFERENCES auctions(auction_id),
-    item_id INTEGER NOT NULL REFERENCES items(item_id),
-    buyer_id INTEGER NOT NULL REFERENCES users(user_id),
-    sale_price DECIMAL(10,2) NOT NULL,
     transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -97,24 +96,28 @@ CREATE TABLE payments (
 );
 
 
---Keeps an audit log of changes made on key tables.
-CREATE TABLE admin_log (
+--Keeps an audit log of auction end_time changes made on key tables.
+CREATE TABLE admin_update_log (
     log_id SERIAL PRIMARY KEY,
-    table_name VARCHAR(50) NOT NULL,
-    operation VARCHAR(10) NOT NULL,   -- e.g. INSERT, UPDATE, DELETE
-    old_data JSONB,
-    new_data JSONB,
+    old_time TIMESTAMP,
+    new_time TIMESTAMP,
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    changed_by VARCHAR(50)            -- e.g. admin username
+    changed_by SERIAL             -- e.g. admin username
 );
 
+--Keeps an audit log of auctions deleted.
+CREATE TABLE admin_delete_log (
+    log_id SERIAL PRIMARY KEY,
+    auction_id INTEGER REFERENCES auctions(auction_id),
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    changed_by SERIAL             -- e.g. admin username
+);
 
 --Allows buyers (or sellers) to review their counterpart after a transaction, but honestly just to complete 10 tables. Again, it is not directly linked to any item, but linked to transactions table, which is linked to auctions, which is linked to item
 CREATE TABLE reviews (
     review_id SERIAL PRIMARY KEY,
     transaction_id INTEGER NOT NULL REFERENCES transactions(transaction_id),
     reviewer_id INTEGER NOT NULL REFERENCES users(user_id),
-    reviewee_id INTEGER NOT NULL REFERENCES users(user_id),
     rating INTEGER CHECK (rating BETWEEN 1 AND 5) NOT NULL,
     comment TEXT,
     review_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -272,21 +275,6 @@ BEGIN
     END IF;
 END;
 $$;
-
-CREATE OR REPLACE FUNCTION log_admin_changes() 
-RETURNS trigger AS $$
-BEGIN
-    INSERT INTO admin_log(table_name, operation, old_data, new_data, changed_by)
-    VALUES (
-        TG_TABLE_NAME,
-        TG_OP,
-        row_to_json(OLD),
-        row_to_json(NEW),
-        current_user
-    );
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER log_items_changes
 AFTER UPDATE OR DELETE ON items

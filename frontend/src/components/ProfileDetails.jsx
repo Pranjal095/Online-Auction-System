@@ -2,35 +2,23 @@ import React, { useEffect, useState } from "react";
 import { useProfileStore } from "../store/useProfileStore";
 
 const ProfileDetails = () => {
-  const { profile, updateProfile, loading } = useProfileStore();
+  const { profile, fetchProfile, updateProfile, loading } = useProfileStore();
+  const [formData, setFormData] = useState({});
 
-  // Actual code to use when backend is ready:
-  /*
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
   useEffect(() => {
     if (profile) {
       setFormData({
-        username: profile.username,
-        email: profile.email,
-        address: profile.address,
-        mobile_number: profile.mobile_number,
+        username: profile.username || "",
+        email: profile.email || "",
+        address: profile.address || "",
+        mobile_number: profile.mobile_number || "",
       });
     }
   }, [profile]);
-  */
-
-  // Dummy data for now:
-  const dummyProfile = {
-    username: "johndoe",
-    email: "john@example.com",
-    address: "123 Main St, City",
-    mobile_number: "1234567890",
-    payment_info: {
-      payment_method: "credit_card",
-      last_four: "4242",
-    },
-  };
-
-  const [formData, setFormData] = useState(dummyProfile);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,9 +27,8 @@ const ProfileDetails = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Uncomment the line below when backend is ready:
-    // await updateProfile(formData);
-    console.log("Updated profile (dummy):", formData);
+    await updateProfile(formData);
+    window.location.href = "/profile"
   };
 
   if (loading && !profile) return <p>Loading profile...</p>;
@@ -55,7 +42,7 @@ const ProfileDetails = () => {
           <input
             type="text"
             name="username"
-            value={formData.username}
+            value={formData && formData.username}
             onChange={handleChange}
             className="input input-bordered w-full"
           />
@@ -65,7 +52,7 @@ const ProfileDetails = () => {
           <input
             type="email"
             name="email"
-            value={formData.email}
+            value={formData && formData.email}
             onChange={handleChange}
             className="input input-bordered w-full"
           />
@@ -75,7 +62,7 @@ const ProfileDetails = () => {
           <input
             type="text"
             name="address"
-            value={formData.address}
+            value={formData && formData.address}
             onChange={handleChange}
             className="input input-bordered w-full"
           />
@@ -85,26 +72,17 @@ const ProfileDetails = () => {
           <input
             type="text"
             name="mobile_number"
-            value={formData.mobile_number}
+            value={formData && formData.mobile_number}
             onChange={handleChange}
             className="input input-bordered w-full"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium">Payment Information</label>
-          <input
-            type="text"
-            value={
-              dummyProfile.payment_info
-                ? `${dummyProfile.payment_info.payment_method} ending in ${dummyProfile.payment_info.last_four}`
-                : "Not Provided"
-            }
-            className="input input-bordered w-full"
-            disabled
-          />
-        </div>
-        <button type="submit" className="btn btn-primary">
-          Update Profile
+        <button 
+          type="submit" 
+          className="btn btn-primary"
+          disabled={loading}
+        >
+          {loading ? "Updating..." : "Update Profile"}
         </button>
       </form>
     </div>

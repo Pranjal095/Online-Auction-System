@@ -14,28 +14,29 @@ import (
 // CreateAuctionHandler handles creation of a new auction with an item
 func CreateAuctionHandler(c *gin.Context) {
 	userID, err := helpers.GetUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
-		return
-	}
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+        return
+    }
 
-	var combinedRequest schema.ItemAuctionRequest
-	if err := c.BindJSON(&combinedRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
-		return
-	}
+    var combinedRequest schema.ItemAuctionRequest
+    if err := c.BindJSON(&combinedRequest); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+        return
+    }
 
-	itemID, err := db.CreateItem(
-		c,
-		userID,
-		combinedRequest.Title,
-		combinedRequest.Description,
-		combinedRequest.StartingBid,
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create item"})
-		return
-	}
+    itemID, err := db.CreateItem(
+        c,
+        userID,
+        combinedRequest.Title,
+        combinedRequest.Description,
+        combinedRequest.StartingBid,
+        combinedRequest.ImagePath,
+    )
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create item"})
+        return
+    }
 
 	auctionID, err := db.CreateAuction(
 		c,

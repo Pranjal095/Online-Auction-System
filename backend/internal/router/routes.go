@@ -29,18 +29,16 @@ func SetupRoutes(router *gin.Engine) {
 	}
 
 	auctionGroup := router.Group("/api/auctions")
+	auctionGroup.Use(middlewares.AuthMiddleware())
 	{
 		auctionGroup.GET("", controller.GetAuctionsHandler)
 		auctionGroup.GET("/:id", controller.GetAuctionHandler)
 		auctionGroup.GET("/:id/bids", controller.GetBidsHandler)
-
-		auctionProtected := auctionGroup.Group("")
-		auctionProtected.Use(middlewares.AuthMiddleware())
-		{
-			auctionProtected.POST("", controller.CreateAuctionHandler)
-			auctionProtected.POST("/:id/bid", controller.PlaceBidHandler)
-		}
+		auctionGroup.POST("", controller.CreateAuctionHandler)
+		auctionGroup.POST("/:id/bid", controller.PlaceBidHandler)
+		auctionGroup.POST("/upload", controller.UploadImageHandler)
 	}
+	router.Static("/uploads", "./uploads")
 
 	profileGroup := router.Group("/api/profile")
 	profileGroup.Use(middlewares.AuthMiddleware())

@@ -41,6 +41,16 @@ const AuctionPage = () => {
             <h2 className="card-title text-3xl font-bold text-primary">{currentAuction.title}</h2>
             <div className="badge badge-accent mt-2">{currentAuction.status}</div>
           </div>
+
+          {currentAuction.image_path && (
+            <div className="mb-6">
+              <img 
+                src={`${import.meta.env.VITE_BACKEND_URL}${currentAuction.image_path}`} 
+                alt={currentAuction.title}
+                className="rounded-lg shadow-md max-h-96 mx-auto" 
+              />
+            </div>
+          )}
           
           <div className="prose max-w-none mb-8">
             <h3 className="text-xl font-semibold mb-2">Description</h3>

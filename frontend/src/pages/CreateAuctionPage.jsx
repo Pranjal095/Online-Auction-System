@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAuctionStore } from "../store/useAuctionStore";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { axiosInstance } from "../lib/axios";
 
 const CreateAuctionPage = () => {
   const { createAuction, isCreating } = useAuctionStore();
@@ -12,7 +13,11 @@ const CreateAuctionPage = () => {
     starting_bid: "",
     start_time: "",
     end_time: "",
+    image_path: "",
   });
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,6 +32,57 @@ const CreateAuctionPage = () => {
     }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // File size validation
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size must be less than 2MB");
+      e.target.value = "";
+      return;
+    }
+
+    // Check if it's an image
+    if (!file.type.match('image.*')) {
+      toast.error("Only image files are allowed");
+      e.target.value = "";
+      return;
+    }
+
+    setSelectedImage(file);
+
+    // Create a preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const uploadImage = async () => {
+    if (!selectedImage) return null;
+
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append("image", selectedImage);
+
+    try {
+      const response = await axiosInstance.post("/api/auctions/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setUploadingImage(false);
+      return response.data.path;
+    } catch (error) {
+      setUploadingImage(false);
+      toast.error("Failed to upload image");
+      console.error("Image upload error:", error);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (
@@ -39,9 +95,25 @@ const CreateAuctionPage = () => {
       toast.error("Please fill all required fields.");
       return;
     }
-    formData.start_time += ":00Z";
-    formData.end_time += ":00Z";
-    await createAuction(formData);
+
+    // First upload the image if selected
+    let imagePath = null;
+    if (selectedImage) {
+      imagePath = await uploadImage();
+      if (!imagePath) {
+        return; // Stop if image upload failed
+      }
+    }
+
+    // Create a copy of formData with the image path
+    const auctionData = {
+      ...formData,
+      image_path: imagePath,
+      start_time: formData.start_time + ":00Z",
+      end_time: formData.end_time + ":00Z",
+    };
+
+    await createAuction(auctionData);
     const error = useAuctionStore.getState().error;
     if (!error) {
       navigate("/auctions");
@@ -53,6 +125,7 @@ const CreateAuctionPage = () => {
       <div className="card bg-base-200 shadow-xl p-6 max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-center">Create Auction</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Existing form fields */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium">
               Title
@@ -81,6 +154,31 @@ const CreateAuctionPage = () => {
               required
             ></textarea>
           </div>
+          
+          {/* New image upload field */}
+          <div>
+            <label htmlFor="image" className="block text-sm font-medium">
+              Item Image (optional, max 2MB)
+            </label>
+            <input
+              type="file"
+              name="image"
+              id="image"
+              accept="image/*"
+              className="file-input file-input-bordered w-full"
+              onChange={handleImageChange}
+            />
+            {previewUrl && (
+              <div className="mt-2">
+                <img 
+                  src={previewUrl} 
+                  alt="Preview" 
+                  className="max-h-48 rounded-md shadow-sm" 
+                />
+              </div>
+            )}
+          </div>
+          
           <div>
             <label htmlFor="starting_bid" className="block text-sm font-medium">
               Starting Bid ($)
@@ -127,9 +225,9 @@ const CreateAuctionPage = () => {
             <button
               type="submit"
               className="btn btn-primary w-full"
-              disabled={isCreating}
+              disabled={isCreating || uploadingImage}
             >
-              {isCreating ? "Creating Auction..." : "Create Auction"}
+              {isCreating || uploadingImage ? "Creating Auction..." : "Create Auction"}
             </button>
           </div>
         </form>

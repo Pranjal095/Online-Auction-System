@@ -2,22 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useProfileStore } from "../store/useProfileStore";
 import ProfileDetails from "../components/ProfileDetails";
 import BiddingHistory from "../components/BiddingHistory";
-import SoldItems from "../components/SoldItems";
-import PastAuctions from "../components/PastAuctions";
+import BoughtItems from "../components/BoughtItems";
+import YourAuctions from "../components/YourAuctions";
 
 const ProfilePage = () => {
-  const { fetchProfile, fetchBiddingHistory, fetchSoldItems, fetchPastAuctions } = useProfileStore();
   const [activeTab, setActiveTab] = useState("details");
-
-  useEffect(() => {
-    // Uncomment these lines when backend is ready:
-    // fetchProfile();
-    // fetchBiddingHistory();
-    // fetchSoldItems();
-    // fetchPastAuctions();
-
-    // For now, dummy data from the store is already loaded.
-  }, [fetchProfile, fetchBiddingHistory, fetchSoldItems, fetchPastAuctions]);
 
   return (
     <div className="min-h-screen container mx-auto px-4 pt-20">
@@ -36,23 +25,23 @@ const ProfilePage = () => {
           Bidding History
         </button>
         <button
-          className={`tab tab-bordered ${activeTab === "sold" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("sold")}
+          className={`tab tab-bordered ${activeTab === "bought" ? "tab-active" : ""}`}
+          onClick={() => setActiveTab("bought")}
         >
-          Sold Items
+          Bought Items
         </button>
         <button
-          className={`tab tab-bordered ${activeTab === "past" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("past")}
+          className={`tab tab-bordered ${activeTab === "your" ? "tab-active" : ""}`}
+          onClick={() => setActiveTab("your")}
         >
-          Past Auctions
+          Your Auctions
         </button>
       </div>
       <div className="mt-4">
         {activeTab === "details" && <ProfileDetails />}
         {activeTab === "bidding" && <BiddingHistory />}
-        {activeTab === "sold" && <SoldItems />}
-        {activeTab === "past" && <PastAuctions />}
+        {activeTab === "bought" && <BoughtItems />}
+        {activeTab === "your" && <YourAuctions />}
       </div>
     </div>
   );

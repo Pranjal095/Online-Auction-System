@@ -41,13 +41,15 @@ func UpdateProfileHandler(c *gin.Context) {
 		return
 	}
 
+	user, err := db.GetUserByID(c, userID)
+
 	if profileUpdate.Username != "" {
 		available, err := db.IsUsernameAvailable(c, profileUpdate.Username)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check username availability"})
 			return
 		}
-		if !available {
+		if !available && profileUpdate.Username != user.Username {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Username already taken"})
 			return
 		}
@@ -59,7 +61,7 @@ func UpdateProfileHandler(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check email availability"})
 			return
 		}
-		if !available {
+		if !available && profileUpdate.Email != user.Email {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Email already registered"})
 			return
 		}

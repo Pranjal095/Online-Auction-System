@@ -6,15 +6,15 @@ export const useProfileStore = create((set) => ({
   profile: null,
   biddingHistory: [],
   soldItems: [],
-  pastAuctions: [],
+  yourAuctions: [],
   loading: false,
   error: null,
 
-  // Fetch the user's profile (including payment info)
+  // Fetch the user's profile
   fetchProfile: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await axiosInstance.get("/profile");
+      const response = await axiosInstance.get("/api/profile");
       set({ profile: response.data, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
@@ -27,12 +27,8 @@ export const useProfileStore = create((set) => ({
   updateProfile: async (data) => {
     set({ loading: true, error: null });
     try {
-      // Uncomment when backend is ready:
-      // const response = await axiosInstance.put("/profile", data);
-      // set({ profile: response.data, loading: false });
-      
-      // Dummy simulation of update:
-      set((state) => ({ profile: { ...state.profile, ...data }, loading: false }));
+      const response = await axiosInstance.put("/api/profile", data);
+      set({ profile: response.data, loading: false });
       toast.success("Profile updated successfully!");
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
@@ -80,34 +76,12 @@ export const useProfileStore = create((set) => ({
     }
   },
 
-  // Fetch past auctions for the seller (auctions that have ended)
-  fetchPastAuctions: async () => {
+  // Fetch auctions for the seller
+  fetchYourAuctions: async () => {
     set({ loading: true, error: null });
     try {
-      // Uncomment when backend is ready:
-      // const response = await axiosInstance.get("/profile/past-auctions");
-      // set({ pastAuctions: response.data.pastAuctions, loading: false });
-      
-      // Dummy past auctions:
-      const dummyPastAuctions = [
-        {
-          auction_id: 3,
-          item_title: "Old Camera",
-          starting_bid: 80.0,
-          final_bid: 120.0,
-          end_time: "2025-03-31T18:00:00Z",
-          status: "closed",
-        },
-        {
-          auction_id: 4,
-          item_title: "Vintage Lamp",
-          starting_bid: 50.0,
-          final_bid: 75.0,
-          end_time: "2025-03-28T20:00:00Z",
-          status: "closed",
-        },
-      ];
-      set({ pastAuctions: dummyPastAuctions, loading: false });
+      const response = await axiosInstance.get("/api/profile/auctions");
+      set({ yourAuctions: response.data, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
       set({ error: errorMsg, loading: false });
