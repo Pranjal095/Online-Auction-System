@@ -14,24 +14,8 @@ export const useProfileStore = create((set) => ({
   fetchProfile: async () => {
     set({ loading: true, error: null });
     try {
-      // Uncomment when backend is ready:
-      // const response = await axiosInstance.get("/profile");
-      // set({ profile: response.data, loading: false });
-      
-      // Dummy data for testing:
-      const dummyProfile = {
-        user_id: 1,
-        username: "johndoe",
-        email: "john@example.com",
-        address: "123 Main St, City",
-        mobile_number: "1234567890",
-        created_at: "2025-01-01T00:00:00Z",
-        payment_info: {
-          payment_method: "credit_card",
-          last_four: "4242",
-        },
-      };
-      set({ profile: dummyProfile, loading: false });
+      const response = await axiosInstance.get("/profile");
+      set({ profile: response.data, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
       set({ error: errorMsg, loading: false });
@@ -61,28 +45,8 @@ export const useProfileStore = create((set) => ({
   fetchBiddingHistory: async () => {
     set({ loading: true, error: null });
     try {
-      // Uncomment when backend is ready:
-      // const response = await axiosInstance.get("/profile/bidding-history");
-      // set({ biddingHistory: response.data.history, loading: false });
-      
-      // Dummy bidding history:
-      const dummyHistory = [
-        {
-          bid_id: 1,
-          auction_id: 1,
-          item_title: "Vintage Watch",
-          bid_amount: 150.0,
-          bid_time: "2025-04-01T12:30:00Z",
-        },
-        {
-          bid_id: 2,
-          auction_id: 3,
-          item_title: "Modern Painting",
-          bid_amount: 300.0,
-          bid_time: "2025-04-03T15:45:00Z",
-        },
-      ];
-      set({ biddingHistory: dummyHistory, loading: false });
+      const response = await axiosInstance.get("/api/profile/bids");
+      set({ biddingHistory: response.data, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
       set({ error: errorMsg, loading: false });

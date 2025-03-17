@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"Online-Auction-System/backend/internal/controller"
-	// "Online-Auction-System/backend/internal/middlewares"
+	"Online-Auction-System/backend/internal/middlewares"
 )
 
 func home(c *gin.Context) {
@@ -22,9 +22,10 @@ func SetupRoutes(router *gin.Engine) {
 
 	authGroup := router.Group("/auth")
 	{
-		authGroup.POST("/register", controller.RegisterHandler)
+		authGroup.POST("/signup", controller.SignupHandler)
 		authGroup.POST("/login", controller.LoginHandler)
 		authGroup.GET("/logout", controller.LogoutHandler)
+		authGroup.GET("/check", controller.CheckAuthHandler)
 	}
 
 	auctionGroup := router.Group("/api/auctions")
@@ -34,7 +35,7 @@ func SetupRoutes(router *gin.Engine) {
 		auctionGroup.GET("/:id/bids", controller.GetBidsHandler)
 
 		auctionProtected := auctionGroup.Group("")
-		// auctionProtected.Use(middlewares.AuthMiddleware())
+		auctionProtected.Use(middlewares.AuthMiddleware())
 		{
 			auctionProtected.POST("", controller.CreateAuctionHandler)
 			auctionProtected.POST("/:id/bid", controller.PlaceBidHandler)
@@ -42,7 +43,7 @@ func SetupRoutes(router *gin.Engine) {
 	}
 
 	profileGroup := router.Group("/api/profile")
-	// profileGroup.Use(middlewares.AuthMiddleware())
+	profileGroup.Use(middlewares.AuthMiddleware())
 	{
 		profileGroup.GET("", controller.GetProfileHandler)
 		profileGroup.PUT("", controller.UpdateProfileHandler)

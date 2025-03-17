@@ -26,7 +26,7 @@ type AuctionResponse struct {
 }
 
 type BidCreate struct {
-	Amount float64 `json:"amount" binding:"required"`
+	Amount float64 `json:"bid_amount" binding:"required"`
 }
 
 type BidResponse struct {

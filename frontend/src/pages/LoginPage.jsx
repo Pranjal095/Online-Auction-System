@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
+import { useNavigate } from "react-router-dom";
 import { User, Lock, LogIn } from "lucide-react";
 
 const LoginPage = () => {
   const [data, setData] = useState({ username: "", password: "" });
   const { login, isLoggingIn, error } = useAuthStore();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setData({ ...data, [e.target.name]: e.target.value });
@@ -13,12 +15,15 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await login(data);
+    const error = useAuthStore.getState().error;
+    if (!error) {
+      navigate("/");
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-base-100">
       <div className="grid grid-cols-1 md:grid-cols-2 w-full max-w-5xl shadow-xl rounded-lg overflow-hidden bg-base-200">
-        {/* Left Side - Login Form */}
         <div className="p-8 flex flex-col justify-center">
           <h2 className="text-3xl font-bold mb-6 text-primary">Welcome Back</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -55,7 +60,6 @@ const LoginPage = () => {
           </form>
         </div>
 
-        {/* Right Side - Illustration */}
         <div className="hidden md:flex items-center justify-center bg-primary text-primary-content p-8">
           <div className="text-center">
             <LogIn className="w-16 h-16 mx-auto mb-4" />

@@ -28,15 +28,23 @@ func SetCookie(w http.ResponseWriter, key string, value string, daysExpire int) 
 
 // GetUserID retrieves the user ID from the request context
 func GetUserID(c *gin.Context) (int, error) {
-	userIDStr, exists := c.Get("user_id")
+	userIDVal, exists := c.Get("id")
 	if !exists {
 		return 0, fmt.Errorf("error: User ID not found in context")
 	}
 
-	userID, err := strconv.Atoi(userIDStr.(string))
-	if err != nil  {
-		return 0, fmt.Errorf("error: User ID is not an integer")
-	}
-
-	return userID, nil
+	switch v := userIDVal.(type) {
+    case float64:
+        return int(v), nil
+    case int:
+        return v, nil
+    case string:
+        userID, err := strconv.Atoi(v)
+        if err != nil {
+            return 0, fmt.Errorf("error: User ID is not a valid integer string")
+        }
+        return userID, nil
+    default:
+        return 0, fmt.Errorf("error: User ID has unexpected type %T", userIDVal)
+    }
 }

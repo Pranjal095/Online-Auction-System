@@ -3,21 +3,18 @@ import { toast } from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
 
 export const useAuthStore = create((set) => ({
-  user: null, // Authenticated user info: { user_id, username, email, address, mobile_number, created_at }
-  token: localStorage.getItem("token") || null,
+  user: null,
   isCheckingAuth: true,
   isLoggingIn: false,
   isSigningUp: false,
   error: null,
 
-  // Login function: expects a `data` object containing credentials (e.g., { username, password }).
   login: async (data) => {
     set({ isLoggingIn: true, error: null });
     try {
-      const response = await axiosInstance.post("/login", data);
-      const { token, user } = response.data;
-      set({ user, token, isLoggingIn: false });
-      localStorage.setItem("token", token);
+      const response = await axiosInstance.post("/auth/login", data);
+      const user = response.data;
+      set({ user, isLoggingIn: false });
       toast.success("Logged in successfully!");
     } catch (err) {
       const errorMsg =
@@ -28,14 +25,12 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  // Signup function: expects a `data` object containing registration details.
   signup: async (data) => {
     set({ isSigningUp: true, error: null });
     try {
-      const response = await axiosInstance.post("/signup", data);
-      const { token, user } = response.data;
-      set({ user, token, isSigningUp: false });
-      localStorage.setItem("token", token);
+      const response = await axiosInstance.post("/auth/signup", data);
+      const user = response.data;
+      set({ user, isSigningUp: false });
       toast.success("Signed up successfully!");
     } catch (err) {
       const errorMsg =
@@ -47,20 +42,27 @@ export const useAuthStore = create((set) => ({
   },
 
   // Logout function: clears the authentication state and removes the token.
-  logout: () => {
-    localStorage.removeItem("token");
-    set({ user: null, token: null });
-    toast.success("Logged out successfully!");
+  logout: async () => {
+    set({ user: null });
+    try {
+      const response = await axiosInstance.get("/auth/logout");
+      toast.success("Logged out successfully!");
+    } catch (err) {
+      const errorMsg =
+        err.response && err.response.data ? err.response.data.error : err.message;
+      console.error("Logout error:", err);
+      set({ error: errorMsg });
+      toast.error(errorMsg);
+    }
   },
 
   // checkAuth function: checks the current authentication status, updates the user state,
   // and returns the user object.
   checkAuth: async () => {
     try {
-      const response = await axiosInstance.get("/checkAuth");
-      const { user } = response.data;
+      const response = await axiosInstance.get("/auth/check");
+      const user = response.data;
       set({ user, isCheckingAuth: false });
-      return user;
     } catch (err) {
       const errorMsg =
         err.response && err.response.data ? err.response.data.error : err.message;

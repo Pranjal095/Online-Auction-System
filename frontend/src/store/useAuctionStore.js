@@ -16,8 +16,8 @@ export const useAuctionStore = create((set, get) => ({
   fetchAuctions: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await axiosInstance.get("/auctions");
-      const auctions = response.data.auctions;
+      const response = await axiosInstance.get("/api/auctions");
+      const auctions = response.data;
       set({ auctions, loading: false });
     } catch (err) {
       const errorMsg =
@@ -31,17 +31,14 @@ export const useAuctionStore = create((set, get) => ({
   },
 
   // Create a new auction using provided data
-  // Expected data example: { seller_id, title, description, starting_bid, start_time, end_time, image }
   createAuction: async (data) => {
     set({ isCreating: true, error: null });
     try {
-      const response = await axiosInstance.post("/auctions", data);
-      const newAuction = response.data.auction;
-      set((state) => ({
-        auctions: [...state.auctions, newAuction],
-        isCreating: false,
-      }));
-      toast.success("Auction created successfully!");
+      const response = await axiosInstance.post("/api/auctions", data);
+      set({ isCreating: false });
+      if (!response.data.error) {
+        toast.success("Auction created successfully!");
+      }
     } catch (err) {
       const errorMsg =
         err.response && err.response.data
@@ -57,8 +54,8 @@ export const useAuctionStore = create((set, get) => ({
   fetchAuction: async (auction_id) => {
     set({ loading: true, error: null });
     try {
-      const response = await axiosInstance.get(`/auctions/${auction_id}`);
-      const auction = response.data.auction;
+      const response = await axiosInstance.get(`/api/auctions/${auction_id}`);
+      const auction = response.data;
       set({ currentAuction: auction, loading: false });
     } catch (err) {
       const errorMsg =
@@ -75,8 +72,8 @@ export const useAuctionStore = create((set, get) => ({
   placeBid: async (auction_id, bid_amount) => {
     set({ loading: true, error: null });
     try {
-      const response = await axiosInstance.post(`/auctions/${auction_id}/bid`, { bid_amount });
-      const updatedAuction = response.data.auction;
+      const response = await axiosInstance.post(`/api/auctions/${auction_id}/bid`, { bid_amount });
+      const updatedAuction = response.data;
       set({ currentAuction: updatedAuction, loading: false });
       toast.success("Bid placed successfully!");
     } catch (err) {

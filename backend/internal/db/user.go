@@ -48,3 +48,12 @@ func IsEmailAvailable(c context.Context, email string) (bool, error) {
 	err := config.DB.QueryRow(c, "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", email).Scan(&exists)
 	return !exists, err
 }
+
+// GetUserByID retrieves a user by ID
+func GetUserByID(c context.Context, userID int) (User, error) {
+	var user User
+	err := config.DB.QueryRow(c,
+		"SELECT user_id, username, email, password, address, mobile_number, created_at FROM users WHERE user_id = $1",
+		userID).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Address, &user.MobileNumber, &user.CreatedAt)
+	return user, err
+}

@@ -11,13 +11,15 @@ import CreateAuctionPage from './pages/CreateAuctionPage'
 import ProfilePage from './pages/ProfilePage'
 
 import { useThemeStore } from './store/useThemeStore';
-import { useEffect } from 'react';
+import { Toaster } from 'react-hot-toast'
+
 
 function App() {
   const { theme } = useThemeStore();
 
   return (
     <div data-theme={theme}>
+      <Toaster position="bottom-right" />
       <Navbar />
         <Routes>
           <Route path="/" element={<HomePage />} />

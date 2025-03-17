@@ -12,20 +12,23 @@ const CreateAuctionPage = () => {
     starting_bid: "",
     start_time: "",
     end_time: "",
-    image: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    const processedValue = name === "starting_bid" && value !== "" 
+      ? parseFloat(value) 
+      : value;
+      
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: processedValue,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Basic validation: ensure required fields are filled.
     if (
       !formData.title ||
       !formData.description ||
@@ -36,13 +39,12 @@ const CreateAuctionPage = () => {
       toast.error("Please fill all required fields.");
       return;
     }
-    try {
-      await createAuction(formData);
-      toast.success("Auction created successfully!");
+    formData.start_time += ":00Z";
+    formData.end_time += ":00Z";
+    await createAuction(formData);
+    const error = useAuctionStore.getState().error;
+    if (!error) {
       navigate("/auctions");
-    } catch (error) {
-      console.error("CreateAuctionPage error:", error);
-      // Error toast is handled within the store.
     }
   };
 
@@ -51,7 +53,6 @@ const CreateAuctionPage = () => {
       <div className="card bg-base-200 shadow-xl p-6 max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-center">Create Auction</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Title */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium">
               Title
@@ -66,7 +67,6 @@ const CreateAuctionPage = () => {
               required
             />
           </div>
-          {/* Description */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium">
               Description
@@ -81,7 +81,6 @@ const CreateAuctionPage = () => {
               required
             ></textarea>
           </div>
-          {/* Starting Bid */}
           <div>
             <label htmlFor="starting_bid" className="block text-sm font-medium">
               Starting Bid ($)
@@ -96,7 +95,6 @@ const CreateAuctionPage = () => {
               required
             />
           </div>
-          {/* Auction Start Time */}
           <div>
             <label htmlFor="start_time" className="block text-sm font-medium">
               Auction Start Time
@@ -111,7 +109,6 @@ const CreateAuctionPage = () => {
               required
             />
           </div>
-          {/* Auction End Time */}
           <div>
             <label htmlFor="end_time" className="block text-sm font-medium">
               Auction End Time
@@ -126,21 +123,6 @@ const CreateAuctionPage = () => {
               required
             />
           </div>
-          {/* Image URL */}
-          <div>
-            <label htmlFor="image" className="block text-sm font-medium">
-              Image URL
-            </label>
-            <input
-              type="text"
-              name="image"
-              id="image"
-              className="input input-bordered w-full"
-              value={formData.image}
-              onChange={handleChange}
-            />
-          </div>
-          {/* Submit Button */}
           <div className="pt-4">
             <button
               type="submit"

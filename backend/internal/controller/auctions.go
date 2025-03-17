@@ -25,7 +25,6 @@ func CreateAuctionHandler(c *gin.Context) {
 		return
 	}
 
-	// Create the item
 	itemID, err := db.CreateItem(
 		c,
 		userID,
@@ -38,7 +37,6 @@ func CreateAuctionHandler(c *gin.Context) {
 		return
 	}
 
-	// Create the auction using the new item ID
 	auctionID, err := db.CreateAuction(
 		c,
 		itemID,
@@ -105,20 +103,17 @@ func PlaceBidHandler(c *gin.Context) {
 		return
 	}
 
-	// Check if auction exists and is open
 	auction, err := db.GetAuctionByID(c, auctionID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Auction not found"})
 		return
 	}
 
-	// Validate bid amount is higher than current highest bid
 	if bidRequest.Amount <= auction.HighestBid {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Bid amount must be higher than current highest bid"})
 		return
 	}
 
-	// Create the bid
 	bidID, err := db.CreateBid(c, auctionID, userID, bidRequest.Amount)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to place bid"})

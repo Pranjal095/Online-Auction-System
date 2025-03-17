@@ -57,8 +57,8 @@ func LoginHandler(c *gin.Context) {
 	})
 }
 
-// RegisterHandler handles new user registration
-func RegisterHandler(c *gin.Context) {
+// SignupHandler handles new user registration
+func SignupHandler(c *gin.Context) {
 	var registerRequest schema.RegisterRequest
 	if err := c.BindJSON(&registerRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
@@ -124,4 +124,41 @@ func LogoutHandler(c *gin.Context) {
 	//Set the cookie with immediate expiration
 	helpers.SetCookie(c.Writer, "session", "", -1)
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+}
+
+// CheckAuthHandler verifies if the user is authenticated and returns the user data
+func CheckAuthHandler(c *gin.Context) {
+	token, err := c.Cookie("session")
+
+	if err != nil || token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Not authenticated"})
+		return
+	}
+
+	claims, err := helpers.VerifyJWTToken(token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	userID, ok := claims["id"].(int)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID in token"})
+		return
+	}
+
+	// Fetch user data from the database
+	user, err := db.GetUserByID(c, userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":            user.ID,
+		"username":      user.Username,
+		"email":         user.Email,
+		"address":       user.Address,
+		"mobile_number": user.MobileNumber,
+	})
 }

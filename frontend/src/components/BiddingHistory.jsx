@@ -1,34 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useProfileStore } from "../store/useProfileStore";
 
 const BiddingHistory = () => {
-  const { biddingHistory, loading } = useProfileStore();
+  const { fetchBiddingHistory, biddingHistory, loading } = useProfileStore();
 
-  // Actual code when backend is ready:
-  // if (loading && biddingHistory.length === 0) {
-  //   return <p>Loading bidding history...</p>;
-  // }
-  // if (!biddingHistory || biddingHistory.length === 0) {
-  //   return <p>No bidding history available.</p>;
-  // }
+  useEffect(() => {
+    fetchBiddingHistory();
+  }, [fetchBiddingHistory]);
 
-  // Dummy bidding history data:
-  const dummyBiddingHistory = [
-    {
-      bid_id: 1,
-      auction_id: 1,
-      item_title: "Vintage Watch",
-      bid_amount: 150.0,
-      bid_time: "2025-04-01T12:30:00Z",
-    },
-    {
-      bid_id: 2,
-      auction_id: 3,
-      item_title: "Modern Painting",
-      bid_amount: 300.0,
-      bid_time: "2025-04-03T15:45:00Z",
-    },
-  ];
+  if (loading && biddingHistory.length === 0) {
+    return <p>Loading bidding history...</p>;
+  }
+  if (!biddingHistory || biddingHistory.length === 0) {
+    return <p>No bidding history available.</p>;
+  }
 
   return (
     <div>
@@ -44,7 +29,7 @@ const BiddingHistory = () => {
             </tr>
           </thead>
           <tbody>
-            {dummyBiddingHistory.map((bid, index) => (
+            {biddingHistory.map((bid, index) => (
               <tr key={index}>
                 <td>{bid.auction_id}</td>
                 <td>{bid.item_title}</td>
