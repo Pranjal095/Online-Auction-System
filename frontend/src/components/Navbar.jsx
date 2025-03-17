@@ -3,7 +3,7 @@ import { LogOut, Banknote, Settings, User } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 
 const Navbar = () => {
-    const { logout } = useAuthStore()
+    const { user, logout } = useAuthStore();
 
     return (
         <header className="bg-base-300 border-b border-base-300 fixed w-full top-0 z-40 shadow-md">
@@ -16,18 +16,37 @@ const Navbar = () => {
                 </Link>
                 
                 <nav className="flex items-center gap-4">
-                    <Link to="/settings" className="btn btn-sm bg-base-100 text-base-content flex gap-2 items-center transition-all">
-                        <Settings className="w-5 h-5" />
-                        <span className="hidden sm:inline">Settings</span>
-                    </Link>
-                    <Link to="/profile" className="btn btn-sm bg-base-100 text-base-content flex gap-2 items-center transition-all">
-                        <User className="w-5 h-5" />
-                        <span className="hidden sm:inline">Profile</span>
-                    </Link>
-                    <button className="btn btn-sm bg-base-100 text-base-content flex gap-2 items-center transition-all" onClick={logout}>
-                        <LogOut className="w-5 h-5" />
-                        <span className="hidden sm:inline">Logout</span>
-                    </button>
+                    {user ? (
+                        <>
+                            <Link to="/settings" className="btn btn-sm bg-base-100 text-base-content flex gap-2 items-center transition-all">
+                                <Settings className="w-5 h-5" />
+                                <span className="hidden sm:inline">Settings</span>
+                            </Link>
+                            <Link to="/profile" className="btn btn-sm bg-base-100 text-base-content flex gap-2 items-center transition-all">
+                                <User className="w-5 h-5" />
+                                <span className="hidden sm:inline">Profile</span>
+                            </Link>
+                            <button className="btn btn-sm bg-base-100 text-base-content flex gap-2 items-center transition-all" onClick={logout}>
+                                <LogOut className="w-5 h-5" />
+                                <span className="hidden sm:inline">Logout</span>
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/login" className="btn btn-sm bg-base-100 text-base-content flex gap-2 items-center transition-all">
+                                <User className="w-5 h-5" />
+                                <span className="hidden sm:inline">Login</span>
+                            </Link>
+                            <Link to="/signup" className="btn btn-sm bg-base-100 text-base-content flex gap-2 items-center transition-all">
+                                <User className="w-5 h-5" />
+                                <span className="hidden sm:inline">Signup</span>
+                            </Link>
+                            <Link to="/settings" className="btn btn-sm bg-base-100 text-base-content flex gap-2 items-center transition-all">
+                                <Settings className="w-5 h-5" />
+                                <span className="hidden sm:inline">Settings</span>
+                            </Link>
+                        </>
+                    )}
                 </nav>
             </div>
         </header>

@@ -1,7 +1,7 @@
 import React, { use, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { useNavigate } from "react-router-dom";
-import { UserPlus, Mail, Lock, MapPin, Phone, Rocket } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { UserPlus, Mail, Lock, MapPin, Phone, Rocket, EyeOff, Eye } from "lucide-react";
 
 const SignupPage = () => {
   const [data, setData] = useState({
@@ -13,7 +13,12 @@ const SignupPage = () => {
   });
 
   const { signup, isSigningUp, error } = useAuthStore();
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const navigate = useNavigate();
+
+  const togglePasswordVisibility = () => {
+    setIsPasswordVisible((prev) => !prev);
+  };
 
   const handleChange = (e) => {
     setData({ ...data, [e.target.name]: e.target.value });
@@ -46,17 +51,24 @@ const SignupPage = () => {
                 required
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="relative flex items-center gap-2">
               <Lock className="text-primary w-5 h-5" />
               <input
-                type="password"
+                type={isPasswordVisible ? "text" : "password"}
                 name="password"
                 placeholder="Password"
-                className="input input-bordered w-full"
+                className="input input-bordered w-full pr-10"
                 value={data.password}
                 onChange={handleChange}
                 required
               />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute right-2 text-primary focus:outline-none"
+              >
+              {isPasswordVisible ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+              </button>
             </div>
             <div className="flex items-center gap-2">
               <Mail className="text-primary w-5 h-5" />
@@ -99,6 +111,15 @@ const SignupPage = () => {
             </button>
             {error && <p className="text-sm text-red-500 text-center">{error}</p>}
           </form>
+
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-600">
+              Already have an account?{" "}
+              <Link to="/login" className="text-primary font-semibold">
+                Log in
+              </Link>
+            </p>
+          </div>
         </div>
 
         <div className="hidden md:flex flex-col items-center justify-center bg-primary text-primary-content p-8">

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -137,12 +138,15 @@ func CheckAuthHandler(c *gin.Context) {
 
 	claims, err := helpers.VerifyJWTToken(token)
 	if err != nil {
+		fmt.Println("Token verification failed:", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-		return
+		c.Abort()
+	} else {
+		c.Set("id", claims["id"])
 	}
 
-	userID, ok := claims["id"].(int)
-	if !ok {
+	userID, err := helpers.GetUserID(c)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID in token"})
 		return
 	}

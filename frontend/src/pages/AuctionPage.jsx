@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useAuctionStore } from "../store/useAuctionStore";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/useAuthStore";
 
 const AuctionPage = () => {
   const { auction_id } = useParams();
   const { currentAuction, fetchAuction, placeBid, loading } = useAuctionStore();
+  const { user } = useAuthStore();
   const [bidAmount, setBidAmount] = useState("");
-  const navigate = useNavigate();
-
   useEffect(() => {
     if (auction_id) {
       fetchAuction(auction_id);
@@ -89,16 +89,16 @@ const AuctionPage = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Start Time:</span>
-                  <span>{new Date(currentAuction.start_time).toLocaleString()}</span>
+                  <span className="font-semibold">{new Date(currentAuction.start_time).toUTCString().slice(0, -4)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>End Time:</span>
-                  <span className="font-semibold">{new Date(currentAuction.end_time).toLocaleString()}</span>
+                  <span className="font-semibold">{new Date(currentAuction.end_time).toUTCString().slice(0, -4)}</span>
                 </div>
               </div>
             </div>
           </div>
-          
+          { currentAuction.status !== "closed" && user.user_id !== currentAuction.seller_id &&
           <div className="mt-6 bg-base-100 p-4 rounded-xl border border-primary/30">
             <h3 className="text-xl font-semibold mb-4 text-center">Place Your Bid</h3>
             <form onSubmit={handleBidSubmit} className="flex flex-col gap-4">
@@ -126,6 +126,7 @@ const AuctionPage = () => {
               </button>
             </form>
           </div>
+          }
         </div>
       </div>
     </div>
