@@ -104,6 +104,8 @@ const SignupPage = () => {
                 value={data.mobile_number}
                 onChange={handleChange}
                 required
+                minLength={10}
+                maxLength={10}
               />
             </div>
             <button type="submit" className="btn btn-primary w-full" disabled={isSigningUp}>
