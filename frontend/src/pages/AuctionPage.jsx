@@ -98,7 +98,7 @@ const AuctionPage = () => {
               </div>
             </div>
           </div>
-          { currentAuction.status !== "closed" && user.user_id !== currentAuction.seller_id &&
+          { currentAuction.status !== "closed" && user.id !== currentAuction.seller_id &&
           <div className="mt-6 bg-base-100 p-4 rounded-xl border border-primary/30">
             <h3 className="text-xl font-semibold mb-4 text-center">Place Your Bid</h3>
             <form onSubmit={handleBidSubmit} className="flex flex-col gap-4">
