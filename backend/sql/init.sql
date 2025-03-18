@@ -33,7 +33,7 @@ CREATE TABLE items (
     starting_bid DECIMAL(10,2) NOT NULL,
     current_highest_bid DECIMAL(10,2),
     current_highest_bidder INTEGER REFERENCES users(user_id),
-    status VARCHAR(20) CHECK (status IN ('active', 'closed')) NOT NULL DEFAULT 'active',
+    status VARCHAR(20) CHECK (status IN ('active', 'closed', 'deleted')) NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

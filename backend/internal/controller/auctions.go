@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -14,29 +15,29 @@ import (
 // CreateAuctionHandler handles creation of a new auction with an item
 func CreateAuctionHandler(c *gin.Context) {
 	userID, err := helpers.GetUserID(c)
-    if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
-        return
-    }
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
 
-    var combinedRequest schema.ItemAuctionRequest
-    if err := c.BindJSON(&combinedRequest); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
-        return
-    }
+	var combinedRequest schema.ItemAuctionRequest
+	if err := c.BindJSON(&combinedRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
 
-    itemID, err := db.CreateItem(
-        c,
-        userID,
-        combinedRequest.Title,
-        combinedRequest.Description,
-        combinedRequest.StartingBid,
-        combinedRequest.ImagePath,
-    )
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create item"})
-        return
-    }
+	itemID, err := db.CreateItem(
+		c,
+		userID,
+		combinedRequest.Title,
+		combinedRequest.Description,
+		combinedRequest.StartingBid,
+		combinedRequest.ImagePath,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create item"})
+		return
+	}
 
 	auctionID, err := db.CreateAuction(
 		c,
@@ -142,4 +143,76 @@ func GetBidsHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, bids)
+}
+
+// DeleteAuctionHandler handles deleting an auction (setting status to deleted)
+func DeleteAuctionHandler(c *gin.Context) {
+	_, err := helpers.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	auctionID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid auction ID"})
+		return
+	}
+
+	_, err = db.GetAuctionByID(c, auctionID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Auction not found"})
+		return
+	}
+
+	err = db.DeleteAuction(c, auctionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete auction"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Auction deleted successfully"})
+}
+
+// UpdateAuctionEndTimeHandler handles updating an auction's end time
+func UpdateAuctionEndTimeHandler(c *gin.Context) {
+	_, err := helpers.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	auctionID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid auction ID"})
+		return
+	}
+
+	var request struct {
+		NewEndTime time.Time `json:"newEndTime" binding:"required"`
+	}
+
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	_, err = db.GetAuctionByID(c, auctionID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Auction not found"})
+		return
+	}
+
+	if request.NewEndTime.Before(time.Now()) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "End time cannot be in the past"})
+		return
+	}
+
+	updatedAuction, err := db.UpdateAuctionEndTime(c, auctionID, request.NewEndTime)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update auction end time"})
+		return
+	}
+
+	c.JSON(http.StatusOK, updatedAuction)
 }

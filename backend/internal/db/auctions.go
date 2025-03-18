@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"Online-Auction-System/backend/config"
@@ -37,6 +38,10 @@ func CreateAuction(c context.Context, itemID int, startTime, endTime time.Time) 
 
 // GetAuctions retrieves a list of active auctions
 func GetAuctions(c context.Context) ([]schema.AuctionResponse, error) {
+	err := UpdateAuctionStatuses(c)
+    if err != nil {
+        fmt.Printf("Error updating auction statuses: %v\n", err)
+    }
 	rows, err := config.DB.Query(c, `
         SELECT a.auction_id, a.item_id, i.title, i.description, 
                i.starting_bid, COALESCE(i.current_highest_bid, 0), 
@@ -73,8 +78,12 @@ func GetAuctions(c context.Context) ([]schema.AuctionResponse, error) {
 
 // GetAuctionByID retrieves details of a specific auction
 func GetAuctionByID(c context.Context, auctionID int) (schema.AuctionResponse, error) {
+	err := UpdateAuctionStatuses(c)
+    if err != nil {
+        fmt.Printf("Error updating auction statuses: %v\n", err)
+    }
 	var auction schema.AuctionResponse
-	err := config.DB.QueryRow(c, `
+	err = config.DB.QueryRow(c, `
 		SELECT a.auction_id, a.item_id, i.title, i.description, i.starting_bid, COALESCE(i.current_highest_bid, 0), i.seller_id, u.username, a.start_time, a.end_time, a.status, i.image_path, (SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id)
         FROM auctions a
         JOIN items i ON a.item_id = i.item_id
@@ -235,4 +244,125 @@ func GetUserBids(c context.Context, userID int) ([]schema.BidResponse, error) {
 	}
 
 	return bids, rows.Err()
+}
+
+// UpdateAuctionStatuses updates the statuses of auctions based on their start and end times
+func UpdateAuctionStatuses(c context.Context) error {
+    tx, err := config.DB.Begin(c)
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback(c)
+
+    rows, err := tx.Query(c, `
+        SELECT auction_id, item_id 
+        FROM auctions 
+        WHERE status = 'open' AND end_time < NOW()
+    `)
+
+    if err != nil {
+        return err
+    }
+    
+    type auctionItem struct {
+        AuctionID int
+        ItemID    int
+    }
+    
+    var expiredAuctions []auctionItem
+    for rows.Next() {
+        var a auctionItem
+        if err := rows.Scan(&a.AuctionID, &a.ItemID); err != nil {
+            rows.Close()
+            return err
+        }
+        expiredAuctions = append(expiredAuctions, a)
+    }
+    rows.Close()
+    
+    for _, a := range expiredAuctions {
+        _, err = tx.Exec(c, "UPDATE auctions SET status = 'closed' WHERE auction_id = $1", a.AuctionID)
+        if err != nil {
+            return err
+        }
+        
+        _, err = tx.Exec(c, "UPDATE items SET status = 'closed' WHERE item_id = $1", a.ItemID)
+        if err != nil {
+            return err
+        }
+        
+        var highestBid float64
+        var highestBidderID int
+        err = tx.QueryRow(c, `
+            SELECT current_highest_bid, current_highest_bidder
+            FROM items 
+            WHERE item_id = $1
+        `, a.ItemID).Scan(&highestBid, &highestBidderID)
+    }
+
+    return tx.Commit(c)
+}
+
+// DeleteAuction updates an auction's status to 'deleted' and logs it
+func DeleteAuction(c context.Context, auctionID int) error {
+	result, err := config.DB.Exec(c,
+		"UPDATE auctions SET status = 'closed' WHERE auction_id = $1",
+		auctionID)
+
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("auction not found")
+	}
+
+	_, err = config.DB.Exec(c,
+		"UPDATE items i SET status = 'deleted' FROM auctions a WHERE a.auction_id = $1 AND a.item_id = i.item_id",
+		auctionID)
+
+	_, err = config.DB.Exec(c,
+		"INSERT INTO admin_delete_log (auction_id, changed_by) VALUES ($1, 1)",
+		auctionID)
+
+	return err
+}
+
+// UpdateAuctionEndTime updates the end time for an auction
+func UpdateAuctionEndTime(c context.Context, auctionID int, newEndTime time.Time) (schema.AuctionResponse, error) {
+	tx, err := config.DB.Begin(c)
+	if err != nil {
+		return schema.AuctionResponse{}, err
+	}
+	defer tx.Rollback(c)
+
+	var oldEndTime time.Time
+	err = tx.QueryRow(c, "SELECT end_time FROM auctions WHERE auction_id = $1", auctionID).Scan(&oldEndTime)
+	if err != nil {
+		return schema.AuctionResponse{}, err
+	}
+
+	result, err := tx.Exec(c, "UPDATE auctions SET end_time = $1 WHERE auction_id = $2", newEndTime, auctionID)
+	if err != nil {
+		return schema.AuctionResponse{}, err
+	}
+
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return schema.AuctionResponse{}, fmt.Errorf("auction not found")
+	}
+
+	_, err = tx.Exec(c,
+		"INSERT INTO admin_update_log (old_time, new_time, changed_by) VALUES ($1, $2, 1)",
+		oldEndTime, newEndTime)
+	if err != nil {
+		return schema.AuctionResponse{}, err
+	}
+
+	if err = tx.Commit(c); err != nil {
+		return schema.AuctionResponse{}, err
+	}
+
+	return GetAuctionByID(c, auctionID)
 }
