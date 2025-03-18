@@ -87,5 +87,41 @@ export const useAuctionStore = create((set, get) => ({
     }
   },
 
+  deleteAuction: async (auctionId) => {
+    set({ loading: true, error: null });
+    try {
+      await axiosInstance.delete(`/api/auctions/${auctionId}`);
+      set({ loading: false });
+      toast.success("Auction deleted successfully");
+    } catch (err) {
+      const errorMsg =
+        err.response && err.response.data
+          ? err.response.data.error
+          : err.message;
+      console.error("deleteAuction error:", err);
+      set({ error: errorMsg, loading: false });
+      toast.error(errorMsg);
+    }
+  },
+
+  updateAuctionEndTime: async (auctionId, newEndTime) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await axiosInstance.put(`/auctions/${auctionId}/update-end-time`, { newEndTime });
+      set({ loading: false });
+      toast.success("Auction updated successfully");
+      const updatedAuction = response.data;
+      set({ currentAuction: updatedAuction });
+    } catch (err) {
+      const errorMsg =
+        err.response && err.response.data
+            ? err.response.data.error
+            : err.message;
+        console.error("deleteAuction error:", err);
+        set({ error: errorMsg, loading: false });
+        toast.error(errorMsg);
+    }
+  },
+
   clearError: () => set({ error: null }),
 }));

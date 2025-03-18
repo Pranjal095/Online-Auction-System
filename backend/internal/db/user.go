@@ -14,6 +14,7 @@ type User struct {
 	Email        string
 	Address      string
 	MobileNumber string
+	IsAdmin      bool
 	CreatedAt    time.Time
 }
 
@@ -30,8 +31,8 @@ func CreateUser(c context.Context, username, email, password, address, mobileNum
 func GetUserByUsername(c context.Context, username string) (User, error) {
 	var user User
 	err := config.DB.QueryRow(c,
-		"SELECT user_id, username, email, password, address, mobile_number, created_at FROM users WHERE username = $1",
-		username).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Address, &user.MobileNumber, &user.CreatedAt)
+		"SELECT user_id, username, email, password, address, mobile_number, is_admin, created_at FROM users WHERE username = $1",
+		username).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Address, &user.MobileNumber, &user.IsAdmin, &user.CreatedAt)
 	return user, err
 }
 
@@ -53,7 +54,7 @@ func IsEmailAvailable(c context.Context, email string) (bool, error) {
 func GetUserByID(c context.Context, userID int) (User, error) {
 	var user User
 	err := config.DB.QueryRow(c,
-		"SELECT user_id, username, email, password, address, mobile_number, created_at FROM users WHERE user_id = $1",
-		userID).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Address, &user.MobileNumber, &user.CreatedAt)
+		"SELECT user_id, username, email, password, address, mobile_number, is_admin, created_at FROM users WHERE user_id = $1",
+		userID).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Address, &user.MobileNumber, &user.IsAdmin, &user.CreatedAt)
 	return user, err
 }

@@ -13,7 +13,7 @@ const AuctionsPage = () => {
         <p>No auctions available at the moment.</p>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
-          {auctions && auctions.map((auction) => (
+          {auctions && auctions.filter(auction => auction.status !== "closed").map((auction) => (
             <Link
               key={auction.auction_id}
               to={`/auction/${auction.auction_id}`}

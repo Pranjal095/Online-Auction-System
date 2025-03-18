@@ -3,12 +3,16 @@ import { useParams } from "react-router-dom";
 import { useAuctionStore } from "../store/useAuctionStore";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
+import { Trash } from "lucide-react";
 
 const AuctionPage = () => {
   const { auction_id } = useParams();
-  const { currentAuction, fetchAuction, placeBid, loading } = useAuctionStore();
+  const { currentAuction, fetchAuction, placeBid, loading, deleteAuction, updateAuctionEndTime } = useAuctionStore();
   const { user } = useAuthStore();
   const [bidAmount, setBidAmount] = useState("");
+  const [newEndTime, setNewEndTime] = useState("");
+  const navigate = useNavigate();
+  
   useEffect(() => {
     if (auction_id) {
       fetchAuction(auction_id);
@@ -17,12 +21,23 @@ const AuctionPage = () => {
 
   const handleBidSubmit = async (e) => {
     e.preventDefault();
-    if (!bidAmount) {
-      return;
-    }
+    if (!bidAmount) return;
     await placeBid(auction_id, parseFloat(bidAmount));
     setBidAmount("");
     window.location.href = `/auction/${auction_id}`;
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this auction?")) {
+      await deleteAuction(auction_id);
+      navigate("/auctions");
+    }
+  };
+
+  const handleEndTimeChange = async () => {
+    if (!newEndTime) return;
+    await updateAuctionEndTime(auction_id, newEndTime);
+    fetchAuction(auction_id);
   };
 
   if (loading) {
@@ -37,9 +52,14 @@ const AuctionPage = () => {
     <div className="min-h-screen container mx-auto px-4 pt-20">
       <div className="card bg-base-200 shadow-lg overflow-hidden">
         <div className="card-body">
-          <div className="border-b pb-4 mb-6">
+          <div className="border-b pb-4 mb-6 flex justify-between">
             <h2 className="card-title text-4xl font-bold text-primary">{currentAuction.title}</h2>
-            <div className="badge badge-accent mt-2">{currentAuction.status}</div>
+            {user.is_admin && (
+              <button onClick={handleDelete} className="btn btn-error btn-sm">
+                <Trash className="w-5 h-5" />
+                Delete
+              </button>
+            )}
           </div>
 
           {currentAuction.image_path && (
@@ -98,35 +118,57 @@ const AuctionPage = () => {
               </div>
             </div>
           </div>
-          { currentAuction.status !== "closed" && user.id !== currentAuction.seller_id &&
-          <div className="mt-6 bg-base-100 p-4 rounded-xl border border-primary/30">
-            <h3 className="text-2xl font-semibold mb-4 text-center">Place Your Bid</h3>
-            <form onSubmit={handleBidSubmit} className="flex flex-col gap-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Bid Amount ($)</span>
-                </label>
+
+          {/* Admin controls for changing end time */}
+          {user.is_admin && (
+            <div className="mt-6 bg-base-100 p-4 rounded-xl border border-warning/50">
+              <h3 className="text-2xl font-semibold mb-4 text-warning text-center">Modify Auction End Time</h3>
+              <div className="flex gap-4">
                 <input
-                  type="number"
-                  step="0.01"
-                  min={currentAuction.highest_bid > 0 ? currentAuction.highest_bid + 0.01 : currentAuction.starting_bid}
-                  placeholder="Enter your bid amount"
+                  type="datetime-local"
                   className="input input-bordered w-full"
-                  value={bidAmount}
-                  onChange={(e) => setBidAmount(e.target.value)}
-                  required
+                  value={newEndTime}
+                  onChange={(e) => setNewEndTime(e.target.value)}
                 />
+                <button 
+                  onClick={handleEndTimeChange} 
+                  className="btn btn-warning"
+                >
+                  Update End Time
+                </button>
               </div>
-              <button 
-                type="submit" 
-                className="btn btn-primary btn-block"
-                disabled={loading}
-              >
-                {loading ? "Processing..." : "Place Bid"}
-              </button>
-            </form>
-          </div>
-          }
+            </div>
+          )}
+
+          {currentAuction.status !== "closed" && user.id !== currentAuction.seller_id && (
+            <div className="mt-6 bg-base-100 p-4 rounded-xl border border-primary/30">
+              <h3 className="text-2xl font-semibold mb-4 text-center">Place Your Bid</h3>
+              <form onSubmit={handleBidSubmit} className="flex flex-col gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Bid Amount ($)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={currentAuction.highest_bid > 0 ? currentAuction.highest_bid + 0.01 : currentAuction.starting_bid}
+                    placeholder="Enter your bid amount"
+                    className="input input-bordered w-full"
+                    value={bidAmount}
+                    onChange={(e) => setBidAmount(e.target.value)}
+                    required
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary btn-block"
+                  disabled={loading}
+                >
+                  {loading ? "Processing..." : "Place Bid"}
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -55,6 +55,7 @@ func LoginHandler(c *gin.Context) {
 		"email":         user.Email,
 		"address":       user.Address,
 		"mobile_number": user.MobileNumber,
+		"is_admin":      user.IsAdmin,
 	})
 }
 
@@ -117,6 +118,7 @@ func SignupHandler(c *gin.Context) {
 		"email":         registerRequest.Email,
 		"address":       registerRequest.Address,
 		"mobile_number": registerRequest.MobileNumber,
+		"is_admin":      false,
 	})
 }
 
@@ -164,5 +166,6 @@ func CheckAuthHandler(c *gin.Context) {
 		"email":         user.Email,
 		"address":       user.Address,
 		"mobile_number": user.MobileNumber,
+		"is_admin":      user.IsAdmin,
 	})
 }
