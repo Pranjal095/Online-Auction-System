@@ -38,7 +38,7 @@ const AuctionPage = () => {
       <div className="card bg-base-200 shadow-lg overflow-hidden">
         <div className="card-body">
           <div className="border-b pb-4 mb-6">
-            <h2 className="card-title text-3xl font-bold text-primary">{currentAuction.title}</h2>
+            <h2 className="card-title text-4xl font-bold text-primary">{currentAuction.title}</h2>
             <div className="badge badge-accent mt-2">{currentAuction.status}</div>
           </div>
 
@@ -53,13 +53,13 @@ const AuctionPage = () => {
           )}
           
           <div className="prose max-w-none mb-8">
-            <h3 className="text-xl font-semibold mb-2">Description</h3>
+            <h3 className="text-2xl font-semibold mb-2">Description</h3>
             <p className="text-base-content/80">{currentAuction.description}</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="bg-base-300 p-6 rounded-xl">
-              <h3 className="text-lg font-semibold mb-4">Bid Information</h3>
+              <h3 className="text-xl font-semibold mb-4">Bid Information</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span>Starting Bid:</span>
@@ -81,7 +81,7 @@ const AuctionPage = () => {
             </div>
             
             <div className="bg-base-300 p-6 rounded-xl">
-              <h3 className="text-lg font-semibold mb-4">Auction Details</h3>
+              <h3 className="text-xl font-semibold mb-4">Auction Details</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span>Seller:</span>
@@ -100,7 +100,7 @@ const AuctionPage = () => {
           </div>
           { currentAuction.status !== "closed" && user.id !== currentAuction.seller_id &&
           <div className="mt-6 bg-base-100 p-4 rounded-xl border border-primary/30">
-            <h3 className="text-xl font-semibold mb-4 text-center">Place Your Bid</h3>
+            <h3 className="text-2xl font-semibold mb-4 text-center">Place Your Bid</h3>
             <form onSubmit={handleBidSubmit} className="flex flex-col gap-4">
               <div className="form-control">
                 <label className="label">
