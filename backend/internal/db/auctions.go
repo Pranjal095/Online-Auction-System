@@ -115,29 +115,6 @@ func CreateBid(c context.Context, auctionID, buyerID int, amount float64) (int, 
 		return 0, err
 	}
 
-	_, err = tx.Exec(c, `
-        UPDATE items i SET 
-        current_highest_bid = $1, 
-        current_highest_bidder = $2
-        FROM auctions a 
-        WHERE a.auction_id = $3 
-        AND i.item_id = a.item_id`,
-		amount, buyerID, auctionID)
-
-	if err != nil {
-		return 0, err
-	}
-
-	_, err = tx.Exec(c, `
-        INSERT INTO auction_participants (auction_id, user_id, user_role)
-        VALUES ($1, $2, 'buyer')
-        ON CONFLICT DO NOTHING`,
-		auctionID, buyerID)
-
-	if err != nil {
-		return 0, err
-	}
-
 	if err = tx.Commit(c); err != nil {
 		return 0, err
 	}

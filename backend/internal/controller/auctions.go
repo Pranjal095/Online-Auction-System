@@ -118,7 +118,7 @@ func PlaceBidHandler(c *gin.Context) {
 
 	bidID, err := db.CreateBid(c, auctionID, userID, bidRequest.Amount)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to place bid"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
 

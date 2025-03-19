@@ -162,8 +162,10 @@ BEGIN
            SET current_highest_bid = NEW.bid_amount,
                current_highest_bidder = NEW.buyer_id
          WHERE item_id = v_item_id;
-    ELSE
-        RAISE NOTICE 'Bid % is not higher than current bid % for item %.', NEW.bid_amount, v_current_bid, v_item_id;
+
+        INSERT INTO auction_participants (auction_id, user_id, 'user_role')
+        VALUES (auction_id, current_highest_bidder, 'buyer')
+        ON CONFLICT DO NOTHING
     END IF;
     
     RETURN NEW;
