@@ -34,6 +34,8 @@ func SetupRoutes(router *gin.Engine) {
 		auctionGroup.GET("", controller.GetAuctionsHandler)
 		auctionGroup.GET("/:id", controller.GetAuctionHandler)
 		auctionGroup.GET("/:id/bids", controller.GetBidsHandler)
+		auctionGroup.DELETE("/:id", controller.DeleteAuctionHandler);
+		auctionGroup.PUT("/:id/update-end-time", controller.UpdateAuctionEndTimeHandler)
 		auctionGroup.POST("", controller.CreateAuctionHandler)
 		auctionGroup.POST("/:id/bid", controller.PlaceBidHandler)
 		auctionGroup.POST("/upload", controller.UploadImageHandler)

@@ -107,7 +107,7 @@ export const useAuctionStore = create((set, get) => ({
   updateAuctionEndTime: async (auctionId, newEndTime) => {
     set({ loading: true, error: null });
     try {
-      const response = await axiosInstance.put(`/auctions/${auctionId}/update-end-time`, { newEndTime });
+      const response = await axiosInstance.put(`/api/auctions/${auctionId}/update-end-time`, { newEndTime });
       set({ loading: false });
       toast.success("Auction updated successfully");
       const updatedAuction = response.data;

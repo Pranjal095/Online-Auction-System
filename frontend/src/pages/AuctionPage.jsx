@@ -36,7 +36,8 @@ const AuctionPage = () => {
 
   const handleEndTimeChange = async () => {
     if (!newEndTime) return;
-    await updateAuctionEndTime(auction_id, newEndTime);
+    const updatedEndTime = newEndTime + ":00Z" 
+    await updateAuctionEndTime(auction_id, updatedEndTime);
     fetchAuction(auction_id);
   };
 
@@ -52,16 +53,18 @@ const AuctionPage = () => {
     <div className="min-h-screen container mx-auto px-4 pt-20">
       <div className="card bg-base-200 shadow-lg overflow-hidden">
         <div className="card-body">
-          <div className="border-b pb-4 mb-6 flex justify-between">
-            <h2 className="card-title text-4xl font-bold text-primary">{currentAuction.title}</h2>
-            {user.is_admin && (
-              <button onClick={handleDelete} className="btn btn-error btn-sm">
-                <Trash className="w-5 h-5" />
-                Delete
-              </button>
-            )}
+          <div className="border-b pb-4 mb-6 ">
+            <div className="flex justify-between">
+              <h2 className="card-title text-4xl font-bold text-primary">{currentAuction.title}</h2>
+              {user.is_admin && currentAuction.status === 'open' && (
+                <button onClick={handleDelete} className="btn btn-error btn-sm">
+                  <Trash className="w-5 h-5" />
+                  Delete
+                </button>
+              )}
+            </div>
+            <div className="badge badge-accent mt-2">{currentAuction.status}</div>
           </div>
-
           {currentAuction.image_path && (
             <div className="mb-6">
               <img 
@@ -109,11 +112,11 @@ const AuctionPage = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Start Time:</span>
-                  <span className="font-semibold">{new Date(currentAuction.start_time).toUTCString().slice(0, -4)}</span>
+                  <span className="font-semibold">{new Date(currentAuction.start_time).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>End Time:</span>
-                  <span className="font-semibold">{new Date(currentAuction.end_time).toUTCString().slice(0, -4)}</span>
+                  <span className="font-semibold">{new Date(currentAuction.end_time).toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -140,7 +143,7 @@ const AuctionPage = () => {
             </div>
           )}
 
-          {currentAuction.status !== "closed" && user.id !== currentAuction.seller_id && (
+          {currentAuction.status === "open" && user.id !== currentAuction.seller_id && !user.is_admin && (
             <div className="mt-6 bg-base-100 p-4 rounded-xl border border-primary/30">
               <h3 className="text-2xl font-semibold mb-4 text-center">Place Your Bid</h3>
               <form onSubmit={handleBidSubmit} className="flex flex-col gap-4">

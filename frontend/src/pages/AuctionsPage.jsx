@@ -1,9 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useAuctionStore } from "../store/useAuctionStore";
+import { useAuthStore } from "../store/useAuthStore";
 
 const AuctionsPage = () => {
   const { auctions, loading, fetchAuctions } = useAuctionStore();
+  const { user } = useAuthStore();
   React.useEffect(() => { fetchAuctions(); }, [fetchAuctions]);
 
   return (
@@ -13,7 +15,7 @@ const AuctionsPage = () => {
         <p>No auctions available at the moment.</p>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
-          {auctions && auctions.filter(auction => auction.status === "open").map((auction) => (
+          {auctions && auctions.filter(auction => (user.is_admin ? auction.status !== "deleted" : auction.status === "open")).map((auction) => (
             <Link
               key={auction.auction_id}
               to={`/auction/${auction.auction_id}`}

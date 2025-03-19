@@ -51,7 +51,6 @@ func GetAuctions(c context.Context) ([]schema.AuctionResponse, error) {
         FROM auctions a
         JOIN items i ON a.item_id = i.item_id
         JOIN users u ON i.seller_id = u.user_id
-        WHERE a.status = 'open'
         ORDER BY a.end_time ASC`)
 
 	if err != nil {
@@ -285,19 +284,6 @@ func UpdateAuctionStatuses(c context.Context) error {
         if err != nil {
             return err
         }
-        
-        _, err = tx.Exec(c, "UPDATE items SET status = 'closed' WHERE item_id = $1", a.ItemID)
-        if err != nil {
-            return err
-        }
-        
-        var highestBid float64
-        var highestBidderID int
-        err = tx.QueryRow(c, `
-            SELECT current_highest_bid, current_highest_bidder
-            FROM items 
-            WHERE item_id = $1
-        `, a.ItemID).Scan(&highestBid, &highestBidderID)
     }
 
     return tx.Commit(c)
@@ -306,7 +292,7 @@ func UpdateAuctionStatuses(c context.Context) error {
 // DeleteAuction updates an auction's status to 'deleted' and logs it
 func DeleteAuction(c context.Context, auctionID int) error {
 	result, err := config.DB.Exec(c,
-		"UPDATE auctions SET status = 'closed' WHERE auction_id = $1",
+		"UPDATE auctions SET status = 'deleted' WHERE auction_id = $1",
 		auctionID)
 
 	if err != nil {
@@ -317,10 +303,6 @@ func DeleteAuction(c context.Context, auctionID int) error {
 	if rowsAffected == 0 {
 		return fmt.Errorf("auction not found")
 	}
-
-	_, err = config.DB.Exec(c,
-		"UPDATE items i SET status = 'deleted' FROM auctions a WHERE a.auction_id = $1 AND a.item_id = i.item_id",
-		auctionID)
 
 	_, err = config.DB.Exec(c,
 		"INSERT INTO admin_delete_log (auction_id, changed_by) VALUES ($1, 1)",

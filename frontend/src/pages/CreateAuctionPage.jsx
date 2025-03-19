@@ -158,7 +158,7 @@ const CreateAuctionPage = () => {
           {/* New image upload field */}
           <div>
             <label htmlFor="image" className="block text-sm font-medium">
-              Item Image (optional, max 2MB)
+              Item Image (max 2MB)
             </label>
             <input
               type="file"
@@ -167,6 +167,7 @@ const CreateAuctionPage = () => {
               accept="image/*"
               className="file-input file-input-bordered w-full"
               onChange={handleImageChange}
+              required
             />
             {previewUrl && (
               <div className="mt-2">
