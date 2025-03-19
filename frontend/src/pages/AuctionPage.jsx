@@ -36,7 +36,7 @@ const AuctionPage = () => {
 
   const handleEndTimeChange = async () => {
     if (!newEndTime) return;
-    const updatedEndTime = newEndTime + ":00Z" 
+    const updatedEndTime = new Date(newEndTime).toISOString();
     await updateAuctionEndTime(auction_id, updatedEndTime);
     fetchAuction(auction_id);
   };

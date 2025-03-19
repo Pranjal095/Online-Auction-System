@@ -109,8 +109,8 @@ const CreateAuctionPage = () => {
     const auctionData = {
       ...formData,
       image_path: imagePath,
-      start_time: formData.start_time + ":00Z",
-      end_time: formData.end_time + ":00Z",
+      start_time: new Date(formData.start_time).toISOString(),
+      end_time: new Date(formData.end_time).toISOString(),
     };
 
     await createAuction(auctionData);
