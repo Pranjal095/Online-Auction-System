@@ -81,7 +81,7 @@ export const useAuctionStore = create((set, get) => ({
         err.response && err.response.data
           ? err.response.data.error
           : err.message;
-      console.error("placeBid error:", err);
+      console.error("placeBid error:", errorMsg);
       set({ error: errorMsg, loading: false });
       toast.error(errorMsg);
     }
