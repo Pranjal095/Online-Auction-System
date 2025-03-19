@@ -4,6 +4,7 @@ import { useAuctionStore } from "../store/useAuctionStore";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { Trash } from "lucide-react";
+import getLocalTime from "../helpers/getLocalTime";
 
 const AuctionPage = () => {
   const { auction_id } = useParams();
@@ -36,8 +37,8 @@ const AuctionPage = () => {
 
   const handleEndTimeChange = async () => {
     if (!newEndTime) return;
-    const updatedEndTime = new Date(newEndTime).toISOString();
-    await updateAuctionEndTime(auction_id, updatedEndTime);
+
+    await updateAuctionEndTime(auction_id, getLocalTime(newEndTime));
     fetchAuction(auction_id);
   };
 
@@ -112,17 +113,16 @@ const AuctionPage = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Start Time:</span>
-                  <span className="font-semibold">{new Date(currentAuction.start_time).toLocaleString()}</span>
+                  <span className="font-semibold">{new Date(currentAuction.start_time).toUTCString().slice(0, -4)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>End Time:</span>
-                  <span className="font-semibold">{new Date(currentAuction.end_time).toLocaleString()}</span>
+                  <span className="font-semibold">{new Date(currentAuction.end_time).toUTCString().slice(0, -4)}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Admin controls for changing end time */}
           {user.is_admin && (
             <div className="mt-6 bg-base-100 p-4 rounded-xl border border-warning/50">
               <h3 className="text-2xl font-semibold mb-4 text-warning text-center">Modify Auction End Time</h3>

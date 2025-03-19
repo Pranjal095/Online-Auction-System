@@ -35,7 +35,7 @@ const AuctionsPage = () => {
                 </p>
                 <p>
                   <strong>Auction Ends:</strong>{" "}
-                  {new Date(auction.end_time).toLocaleString()}
+                  {new Date(auction.end_time).toUTCString().slice(0,-4)}
                 </p>
               </div>
             </Link>

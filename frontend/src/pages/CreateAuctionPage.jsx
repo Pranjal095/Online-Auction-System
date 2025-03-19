@@ -3,6 +3,7 @@ import { useAuctionStore } from "../store/useAuctionStore";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
+import getLocalTime from "../helpers/getLocalTime";
 
 const CreateAuctionPage = () => {
   const { createAuction, isCreating } = useAuctionStore();
@@ -109,8 +110,8 @@ const CreateAuctionPage = () => {
     const auctionData = {
       ...formData,
       image_path: imagePath,
-      start_time: new Date(formData.start_time).toISOString(),
-      end_time: new Date(formData.end_time).toISOString(),
+      start_time: getLocalTime(formData.start_time),
+      end_time: getLocalTime(formData.end_time),
     };
 
     await createAuction(auctionData);
