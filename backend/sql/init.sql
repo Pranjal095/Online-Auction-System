@@ -7,7 +7,8 @@ DROP TABLE IF EXISTS auction_participants CASCADE;
 DROP TABLE IF EXISTS transactions CASCADE;
 DROP TABLE IF EXISTS deliveries CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
-DROP TABLE IF EXISTS admin_log CASCADE;
+DROP TABLE IF EXISTS admin_delete_log CASCADE;
+DROP TABLE IF EXISTS admin_update_log CASCADE;
 DROP TABLE IF EXISTS reviews CASCADE;
 
 -- Stores user login and contact information (each user has one address and one mobile number). The backend ensures that if another person tries to login with a number or address or email or username already in use, that is prevented
@@ -80,7 +81,7 @@ CREATE TABLE deliveries (
     delivery_id SERIAL PRIMARY KEY,
     transaction_id INTEGER NOT NULL REFERENCES transactions(transaction_id),
     delivery_status VARCHAR(20) CHECK (delivery_status IN ('pending', 'shipped', 'delivered', 'failed')) NOT NULL DEFAULT 'pending',
-    delivery_date TIMESTAMP,
+    delivery_date TIMESTAMP
 );
 
 --Records payment details for transactions, and failed indicates the same as what was mentioned before. Changes need to be made in this case. Delivery and payment are not directly linked, but both are linked to transactions, which acts as an intermediate to these two
@@ -163,9 +164,9 @@ BEGIN
                current_highest_bidder = NEW.buyer_id
          WHERE item_id = v_item_id;
 
-        INSERT INTO auction_participants (auction_id, user_id, 'user_role')
+        INSERT INTO auction_participants (auction_id, user_id, user_role)
         VALUES (auction_id, current_highest_bidder, 'buyer')
-        ON CONFLICT DO NOTHING
+        ON CONFLICT DO NOTHING;
     END IF;
     
     RETURN NEW;
@@ -273,7 +274,6 @@ CREATE INDEX IF NOT EXISTS idx_participants_user ON auction_participants(user_id
 
 -- Transactions: Accelerate history lookups and joins
 CREATE INDEX IF NOT EXISTS idx_transactions_buyer_date ON transactions(transaction_date);
-CREATE INDEX IF NOT EXISTS idx_transactions_item ON transactions(item_id);
 
 -- Delivery: Track shipment states efficiently
 CREATE INDEX IF NOT EXISTS idx_delivery_status ON deliveries(delivery_status);
@@ -284,7 +284,8 @@ CREATE INDEX IF NOT EXISTS idx_payment_status ON payments(payment_status);
 CREATE INDEX IF NOT EXISTS idx_payment_transaction ON payments(transaction_id);
 
 -- Admin Log: Audit trail optimization
-CREATE INDEX IF NOT EXISTS idx_admin_log_table_changed ON admin_log(changed_at);
+CREATE INDEX IF NOT EXISTS idx_admin_log_table_deleted ON admin_delete_log(changed_at);
+CREATE INDEX IF NOT EXISTS idx_admin_log_table_updated ON admin_update_log(changed_at);
 
 -- Reviews: Enable user reputation checks
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewee ON reviews(transaction_id);
