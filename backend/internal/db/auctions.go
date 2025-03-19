@@ -28,7 +28,7 @@ func CreateAuction(c context.Context, itemID int, startTime, endTime time.Time) 
 	if err == nil {
 		// Add the seller as a participant
 		_, err = config.DB.Exec(c,
-			`INSERT INTO auction_participants (auction_id, user_id, role) 
+			`INSERT INTO auction_participants (auction_id, user_id, user_role) 
              SELECT $1, seller_id, 'seller' FROM items WHERE item_id = $2`,
 			auctionID, itemID)
 	}
@@ -39,14 +39,14 @@ func CreateAuction(c context.Context, itemID int, startTime, endTime time.Time) 
 // GetAuctions retrieves a list of active auctions
 func GetAuctions(c context.Context) ([]schema.AuctionResponse, error) {
 	err := UpdateAuctionStatuses(c)
-    if err != nil {
-        fmt.Printf("Error updating auction statuses: %v\n", err)
-    }
+	if err != nil {
+		fmt.Printf("Error updating auction statuses: %v\n", err)
+	}
 	rows, err := config.DB.Query(c, `
         SELECT a.auction_id, a.item_id, i.title, i.description, 
                i.starting_bid, COALESCE(i.current_highest_bid, 0), 
                i.seller_id, u.username, 
-               a.start_time, a.end_time, a.status, i.image_path, 
+               a.start_time, a.end_time, a.auction_status, i.image_path, 
                (SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id)
         FROM auctions a
         JOIN items i ON a.item_id = i.item_id
@@ -78,12 +78,12 @@ func GetAuctions(c context.Context) ([]schema.AuctionResponse, error) {
 // GetAuctionByID retrieves details of a specific auction
 func GetAuctionByID(c context.Context, auctionID int) (schema.AuctionResponse, error) {
 	err := UpdateAuctionStatuses(c)
-    if err != nil {
-        fmt.Printf("Error updating auction statuses: %v\n", err)
-    }
+	if err != nil {
+		fmt.Printf("Error updating auction statuses: %v\n", err)
+	}
 	var auction schema.AuctionResponse
 	err = config.DB.QueryRow(c, `
-		SELECT a.auction_id, a.item_id, i.title, i.description, i.starting_bid, COALESCE(i.current_highest_bid, 0), i.seller_id, u.username, a.start_time, a.end_time, a.status, i.image_path, (SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id)
+		SELECT a.auction_id, a.item_id, i.title, i.description, i.starting_bid, COALESCE(i.current_highest_bid, 0), i.seller_id, u.username, a.start_time, a.end_time, a.auction_status, i.image_path, (SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id)
         FROM auctions a
         JOIN items i ON a.item_id = i.item_id
         JOIN users u ON i.seller_id = u.user_id
@@ -129,7 +129,7 @@ func CreateBid(c context.Context, auctionID, buyerID int, amount float64) (int, 
 	}
 
 	_, err = tx.Exec(c, `
-        INSERT INTO auction_participants (auction_id, user_id, role)
+        INSERT INTO auction_participants (auction_id, user_id, user_role)
         VALUES ($1, $2, 'buyer')
         ON CONFLICT DO NOTHING`,
 		auctionID, buyerID)
@@ -182,7 +182,7 @@ func GetUserAuctions(c context.Context, userID int) ([]schema.AuctionResponse, e
         SELECT a.auction_id, a.item_id, i.title, i.description, 
                i.starting_bid, COALESCE(i.current_highest_bid, 0), 
                i.seller_id, u.username, 
-               a.start_time, a.end_time, a.status,
+               a.start_time, a.end_time, a.auction_status,
                (SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id)
         FROM auctions a
         JOIN items i ON a.item_id = i.item_id
@@ -247,52 +247,52 @@ func GetUserBids(c context.Context, userID int) ([]schema.BidResponse, error) {
 
 // UpdateAuctionStatuses updates the statuses of auctions based on their start and end times
 func UpdateAuctionStatuses(c context.Context) error {
-    tx, err := config.DB.Begin(c)
-    if err != nil {
-        return err
-    }
-    defer tx.Rollback(c)
+	tx, err := config.DB.Begin(c)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(c)
 
-    rows, err := tx.Query(c, `
+	rows, err := tx.Query(c, `
         SELECT auction_id, item_id 
         FROM auctions 
-        WHERE status = 'open' AND end_time < NOW()
+        WHERE auction_status = 'open' AND end_time < NOW()
     `)
 
-    if err != nil {
-        return err
-    }
-    
-    type auctionItem struct {
-        AuctionID int
-        ItemID    int
-    }
-    
-    var expiredAuctions []auctionItem
-    for rows.Next() {
-        var a auctionItem
-        if err := rows.Scan(&a.AuctionID, &a.ItemID); err != nil {
-            rows.Close()
-            return err
-        }
-        expiredAuctions = append(expiredAuctions, a)
-    }
-    rows.Close()
-    
-    for _, a := range expiredAuctions {
-        _, err = tx.Exec(c, "UPDATE auctions SET status = 'closed' WHERE auction_id = $1", a.AuctionID)
-        if err != nil {
-            return err
-        }
-    }
+	if err != nil {
+		return err
+	}
 
-    return tx.Commit(c)
+	type auctionItem struct {
+		AuctionID int
+		ItemID    int
+	}
+
+	var expiredAuctions []auctionItem
+	for rows.Next() {
+		var a auctionItem
+		if err := rows.Scan(&a.AuctionID, &a.ItemID); err != nil {
+			rows.Close()
+			return err
+		}
+		expiredAuctions = append(expiredAuctions, a)
+	}
+	rows.Close()
+
+	for _, a := range expiredAuctions {
+		_, err = tx.Exec(c, "UPDATE auctions SET auction_status = 'closed' WHERE auction_id = $1", a.AuctionID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(c)
 }
 
 // DeleteAuction updates an auction's status to 'deleted' and logs it
 func DeleteAuction(c context.Context, auctionID int) error {
 	result, err := config.DB.Exec(c,
-		"UPDATE auctions SET status = 'deleted' WHERE auction_id = $1",
+		"UPDATE auctions SET auction_status = 'deleted' WHERE auction_id = $1",
 		auctionID)
 
 	if err != nil {
