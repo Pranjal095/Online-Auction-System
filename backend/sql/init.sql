@@ -141,8 +141,8 @@ BEGIN
     SELECT item_id, auction_status 
       INTO v_item_id, v_auction_status
       FROM auctions 
-     WHERE auction_id = NEW.auction_id
-       FOR UPDATE;
+      WHERE auction_id = NEW.auction_id
+      FOR UPDATE;
     
     -- Check if the auction is still open.
     IF v_auction_status <> 'open' THEN
@@ -165,7 +165,7 @@ BEGIN
          WHERE item_id = v_item_id;
 
         INSERT INTO auction_participants (auction_id, user_id, user_role)
-        VALUES (auction_id, current_highest_bidder, 'buyer')
+        VALUES (NEW.auction_id, NEW.buyer_id, 'buyer')
         ON CONFLICT DO NOTHING;
     END IF;
     

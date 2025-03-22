@@ -25,7 +25,7 @@ const AuctionPage = () => {
     if (!bidAmount) return;
     await placeBid(auction_id, parseFloat(bidAmount));
     setBidAmount("");
-    window.location.href = `/auction/${auction_id}`;
+    // window.location.href = `/auction/${auction_id}`;
   };
 
   const handleDelete = async () => {
@@ -123,7 +123,7 @@ const AuctionPage = () => {
             </div>
           </div>
 
-          {user.is_admin && (
+          {user.is_admin && currentAuction.status !== 'deleted' && (
             <div className="mt-6 bg-base-100 p-4 rounded-xl border border-warning/50">
               <h3 className="text-2xl font-semibold mb-4 text-warning text-center">Modify Auction End Time</h3>
               <div className="flex gap-4">

@@ -2,12 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useProfileStore } from "../store/useProfileStore";
 
 const ProfileDetails = () => {
-  const { profile, fetchProfile, updateProfile, loading } = useProfileStore();
+  const { profile, updateProfile, loading } = useProfileStore();
   const [formData, setFormData] = useState({});
 
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
 
   useEffect(() => {
     if (profile) {

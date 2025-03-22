@@ -6,7 +6,14 @@ import BoughtItems from "../components/BoughtItems";
 import YourAuctions from "../components/YourAuctions";
 
 const ProfilePage = () => {
+  const { fetchBiddingHistory, fetchProfile, fetchYourAuctions } = useProfileStore();
   const [activeTab, setActiveTab] = useState("details");
+
+  useEffect(() => {
+    fetchBiddingHistory();
+    fetchProfile();
+    fetchYourAuctions();
+  }, [fetchBiddingHistory,fetchProfile,fetchYourAuctions]);
 
   return (
     <div className="min-h-screen container mx-auto px-4 pt-20">

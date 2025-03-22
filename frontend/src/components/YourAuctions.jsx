@@ -3,13 +3,9 @@ import { useProfileStore } from "../store/useProfileStore";
 import { useNavigate } from "react-router-dom";
 
 const YourAuctions = () => {
-  const { fetchYourAuctions, yourAuctions, loading } = useProfileStore();
+  const { yourAuctions, loading } = useProfileStore();
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchYourAuctions();
-  }, [fetchYourAuctions]);
 
   const handleClick = (id) => {
     navigate(`/auction/${id}`);
