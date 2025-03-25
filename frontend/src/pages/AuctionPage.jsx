@@ -25,7 +25,7 @@ const AuctionPage = () => {
     if (!bidAmount) return;
     await placeBid(auction_id, parseFloat(bidAmount));
     setBidAmount("");
-    // window.location.href = `/auction/${auction_id}`;
+    window.location.href = `/auction/${auction_id}`;
   };
 
   const handleDelete = async () => {

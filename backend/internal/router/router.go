@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"Online-Auction-System/backend/internal/websockets"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +24,7 @@ func LogFormatter(params gin.LogFormatterParams) string {
 	)
 }
 
-func SetupRouter() *gin.Engine {
+func SetupRouter(wsManager *websockets.Manager) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	fmt.Println("\033[36mGo Gin server started.\033[0m")
@@ -39,6 +41,7 @@ func SetupRouter() *gin.Engine {
 	config.AllowHeaders = []string{"X-Requested-With", "Content-Type", "Accept"}
 	config.AllowCredentials = true
 	router.Use(cors.New(config))
+	router.GET("/ws", websockets.Handler(wsManager))
 
 	SetupRoutes(router)
 
