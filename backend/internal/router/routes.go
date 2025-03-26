@@ -10,7 +10,7 @@ import (
 )
 
 func home(c *gin.Context) {
-	HTMLString := "<h1>Hello from Group 24</h1>"
+	HTMLString := "<h1>Hello from Online Auction System Team</h1>"
 	c.Writer.WriteHeader(http.StatusOK)
 
 	c.Writer.Write([]byte(HTMLString))

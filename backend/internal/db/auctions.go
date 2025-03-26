@@ -332,7 +332,7 @@ func GetUserEmail(c context.Context, userID int) (string, error) {
 	err := config.DB.QueryRow(c, `
         SELECT email
         FROM users
-        WHERE id = $1
+        WHERE user_id = $1
     `, userID).Scan(&email)
 
 	if err != nil {
@@ -344,18 +344,18 @@ func GetUserEmail(c context.Context, userID int) (string, error) {
 
 // GetUserName gets the full name of a user by their ID
 func GetUserName(c context.Context, userID int) (string, error) {
-	var name string
+	var username string
 	err := config.DB.QueryRow(c, `
-        SELECT name
+        SELECT username
         FROM users
-        WHERE id = $1
-    `, userID).Scan(&name)
+        WHERE user_id = $1
+    `, userID).Scan(&username)
 
 	if err != nil {
 		return "", err
 	}
 
-	return name, nil
+	return username, nil
 }
 
 // GetHighestBidder returns the user ID and amount of the highest bidder for an auction
@@ -364,11 +364,10 @@ func GetHighestBidder(c context.Context, auctionID int) (int, float64, error) {
 	var amount float64
 
 	err := config.DB.QueryRow(c, `
-        SELECT user_id, amount
-        FROM bids
-        WHERE auction_id = $1
-        ORDER BY amount DESC
-        LIMIT 1
+        SELECT i.current_highest_bidder, i.current_highest_bid
+        FROM auctions AS a 
+		JOIN items AS i ON a.item_id = i.item_id
+		WHERE a.auction_id = $1
     `, auctionID).Scan(&userID, &amount)
 
 	if err != nil {

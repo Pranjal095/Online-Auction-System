@@ -133,7 +133,7 @@ func PlaceBidHandler(c *gin.Context) {
 		prevBidderEmail, _ := db.GetUserEmail(c, previousBidder)
 
 		if prevBidderEmail != "" {
-			username, err := db.GetUserName(c, userID)
+			username, err := db.GetUserName(c, previousBidder)
 
 			go func() {
 				additionalData := map[string]interface{}{
