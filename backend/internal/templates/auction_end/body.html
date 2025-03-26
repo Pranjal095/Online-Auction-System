@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Auction Has Ended</h1>
+    <p>Hello,</p>
+    
+    {{if .is_winner}}
+    <h2>Congratulations! You won the auction!</h2>
+    <p>You had the highest bid for <strong>"{{ .title }}"</strong>.</p>
+    {{else if .is_seller}}
+    <p>Your auction for <strong>"{{ .title }}"</strong> has ended.</p>
+    {{else}}
+    <p>An auction you participated in for <strong>"{{ .title }}"</strong> has ended.</p>
+    {{end}}
+    
+    <h3>Auction Results:</h3>
+    <p><strong>Item:</strong> {{ .title }}</p>
+    <p><strong>Description:</strong> {{ .description }}</p>
+    <p><strong>Final Price:</strong> ${{ .highest_bid }}</p>
+    {{if .winner_name}}
+    <p><strong>Winner:</strong> {{ .winner_name }}</p>
+    {{else}}
+    <p><strong>Status:</strong> No winner (reserve price not met)</p>
+    {{end}}
+    
+    <p>Thank you for participating in our auctions!</p>
+    <p>- Online Auction System Team</p>
+</body>
+</html>

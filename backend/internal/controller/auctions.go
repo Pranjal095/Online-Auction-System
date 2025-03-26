@@ -14,8 +14,9 @@ import (
 )
 
 var wsManager *websockets.Manager
+
 func SetWebSocketManager(manager *websockets.Manager) {
-    wsManager = manager
+	wsManager = manager
 }
 
 // CreateAuctionHandler handles creation of a new auction with an item
@@ -57,10 +58,9 @@ func CreateAuctionHandler(c *gin.Context) {
 	}
 
 	if wsManager != nil {
-        auction, _ := db.GetAuctionByID(c, auctionID)
-        wsManager.BroadcastNewAuction(auction)
-    }
-
+		auction, _ := db.GetAuctionByID(c, auctionID)
+		wsManager.BroadcastNewAuction(auction)
+	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"auction_id": auctionID,
@@ -128,6 +128,28 @@ func PlaceBidHandler(c *gin.Context) {
 		return
 	}
 
+	previousBidder, prevBidAmount, err := db.GetHighestBidder(c, auctionID)
+	if err == nil && previousBidder > 0 && previousBidder != userID {
+		prevBidderEmail, _ := db.GetUserEmail(c, previousBidder)
+
+		if prevBidderEmail != "" {
+			username, err := db.GetUserName(c, userID)
+
+			go func() {
+				additionalData := map[string]interface{}{
+					"your_bid": prevBidAmount,
+					"new_bid":  bidRequest.Amount,
+					"username": username,
+					"error":    err,
+				}
+
+				if err := helpers.SendAuctionEmail(c, prevBidderEmail, helpers.NotificationOutbid, auctionID, additionalData); err != nil {
+					// create_bid not affected by email sending
+				}
+			}()
+		}
+	}
+
 	bidID, err := db.CreateBid(c, auctionID, userID, bidRequest.Amount)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -135,17 +157,17 @@ func PlaceBidHandler(c *gin.Context) {
 	}
 
 	if wsManager != nil {
-        updatedAuction, _ := db.GetAuctionByID(c, auctionID)
-        bidDetails := map[string]interface{}{
-            "auction_id": auctionID,
-            "bid_id":     bidID,
-            "amount":     bidRequest.Amount,
-            "user_id":    userID,
-            "highest_bid": updatedAuction.HighestBid,
-        }
-        
-        wsManager.BroadcastNewBid(auctionID, bidDetails)
-    }
+		updatedAuction, _ := db.GetAuctionByID(c, auctionID)
+		bidDetails := map[string]interface{}{
+			"auction_id":  auctionID,
+			"bid_id":      bidID,
+			"amount":      bidRequest.Amount,
+			"user_id":     userID,
+			"highest_bid": updatedAuction.HighestBid,
+		}
+
+		wsManager.BroadcastNewBid(auctionID, bidDetails)
+	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"bid_id":  bidID,
@@ -237,6 +259,10 @@ func UpdateAuctionEndTimeHandler(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update auction end time"})
 		return
+	}
+
+	if wsManager != nil {
+		wsManager.BroadcastNewAuction(updatedAuction)
 	}
 
 	c.JSON(http.StatusOK, updatedAuction)
