@@ -6,6 +6,7 @@ import (
 
 	"Online-Auction-System/backend/config"
 	"Online-Auction-System/backend/internal/router"
+	"Online-Auction-System/backend/internal/controller"
 	"Online-Auction-System/backend/internal/websockets"
 )
 
@@ -16,6 +17,7 @@ func init() {
 
 	wsManager = websockets.NewManager()
 	go wsManager.Run()
+	controller.SetWebSocketManager(wsManager)
 }
 
 func main() {

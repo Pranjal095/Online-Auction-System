@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuctionStore } from "../store/useAuctionStore";
 import { useAuthStore } from "../store/useAuthStore";
@@ -6,7 +6,30 @@ import { useAuthStore } from "../store/useAuthStore";
 const AuctionsPage = () => {
   const { auctions, loading, fetchAuctions } = useAuctionStore();
   const { user } = useAuthStore();
-  React.useEffect(() => { fetchAuctions(); }, [fetchAuctions]);
+
+  useEffect(() => { 
+    fetchAuctions(); 
+    
+    const wsUrl = import.meta.env.VITE_BACKEND_URL 
+      ? import.meta.env.VITE_BACKEND_URL.replace('http', 'ws') + '/ws'
+      : 'ws://localhost:8000/ws';
+    const ws = new WebSocket(wsUrl);
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'new_auction') {
+        fetchAuctions();
+      } else if (message.type === 'new_bid') {
+        fetchAuctions();
+      }
+    };
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+    
+    return () => {
+      ws.close();
+    };
+  }, [fetchAuctions]);
 
   return (
     <div className="min-h-screen container mx-auto px-4 pt-20">

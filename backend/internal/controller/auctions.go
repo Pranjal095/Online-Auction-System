@@ -10,7 +10,13 @@ import (
 	"Online-Auction-System/backend/internal/db"
 	"Online-Auction-System/backend/internal/helpers"
 	"Online-Auction-System/backend/internal/schema"
+	"Online-Auction-System/backend/internal/websockets"
 )
+
+var wsManager *websockets.Manager
+func SetWebSocketManager(manager *websockets.Manager) {
+    wsManager = manager
+}
 
 // CreateAuctionHandler handles creation of a new auction with an item
 func CreateAuctionHandler(c *gin.Context) {
@@ -49,6 +55,12 @@ func CreateAuctionHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create auction"})
 		return
 	}
+
+	if wsManager != nil {
+        auction, _ := db.GetAuctionByID(c, auctionID)
+        wsManager.BroadcastNewAuction(auction)
+    }
+
 
 	c.JSON(http.StatusCreated, gin.H{
 		"auction_id": auctionID,
@@ -121,6 +133,19 @@ func PlaceBidHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
+
+	if wsManager != nil {
+        updatedAuction, _ := db.GetAuctionByID(c, auctionID)
+        bidDetails := map[string]interface{}{
+            "auction_id": auctionID,
+            "bid_id":     bidID,
+            "amount":     bidRequest.Amount,
+            "user_id":    userID,
+            "highest_bid": updatedAuction.HighestBid,
+        }
+        
+        wsManager.BroadcastNewBid(auctionID, bidDetails)
+    }
 
 	c.JSON(http.StatusCreated, gin.H{
 		"bid_id":  bidID,

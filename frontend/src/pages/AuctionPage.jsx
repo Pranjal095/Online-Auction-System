@@ -17,6 +17,24 @@ const AuctionPage = () => {
   useEffect(() => {
     if (auction_id) {
       fetchAuction(auction_id);
+      
+      const wsUrl = import.meta.env.VITE_BACKEND_URL 
+        ? import.meta.env.VITE_BACKEND_URL.replace('http', 'ws') + '/ws'
+        : 'ws://localhost:8000/ws';
+      const ws = new WebSocket(wsUrl);
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        if (message.type === 'new_bid' && message.data.auction_id === parseInt(auction_id)) {
+          fetchAuction(auction_id);
+        }
+      };
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+      
+      return () => {
+        ws.close();
+      };
     }
   }, [auction_id, fetchAuction]);
 
