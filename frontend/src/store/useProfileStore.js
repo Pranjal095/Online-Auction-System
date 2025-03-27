@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 export const useProfileStore = create((set) => ({
   profile: null,
   biddingHistory: [],
+  boughtItems: [],
   soldItems: [],
   yourAuctions: [],
   loading: false,
@@ -63,8 +64,8 @@ export const useProfileStore = create((set) => ({
         {
           transaction_id: 1,
           auction_id: 2,
-          item_title: "Antique Vase",
-          sale_price: 250.0,
+          title: "Antique Vase",
+          price: 250.0,
           sold_date: "2025-04-02T14:05:00Z",
         },
       ];
@@ -74,6 +75,36 @@ export const useProfileStore = create((set) => ({
       set({ error: errorMsg, loading: false });
       toast.error(errorMsg);
     }
+  },
+
+  fetchBoughtItems: async () => {
+    set({ loading: true, error: null });
+    try {
+      // Uncomment when backend is ready:
+      // const response = await axiosInstance.get("/profile/sold-items");
+      // set({ soldItems: response.data.soldItems, loading: false });
+      
+      // Dummy sold items:
+      const dummyBought = [
+        {
+          transaction_id: 1,
+          auction_id: 2,
+          title: "Antique Vase",
+          price: 250.0,
+          purchase_date: "2025-04-02T14:05:00Z",
+        },
+      ];
+      set({ boughtItems: dummyBought, loading: false });
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || err.message;
+      set({ error: errorMsg, loading: false });
+      toast.error(errorMsg);
+    }
+  },
+
+  submitReview: async (auctionId, starValue) => {
+    console.log(auctionId);
+    console.log(starValue);
   },
 
   // Fetch auctions for the seller

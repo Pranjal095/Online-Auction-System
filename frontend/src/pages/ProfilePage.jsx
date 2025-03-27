@@ -3,17 +3,20 @@ import { useProfileStore } from "../store/useProfileStore";
 import ProfileDetails from "../components/ProfileDetails";
 import BiddingHistory from "../components/BiddingHistory";
 import BoughtItems from "../components/BoughtItems";
+import SoldItems from "../components/SoldItems"
 import YourAuctions from "../components/YourAuctions";
 
 const ProfilePage = () => {
-  const { fetchBiddingHistory, fetchProfile, fetchYourAuctions } = useProfileStore();
+  const { fetchBiddingHistory, fetchProfile, fetchYourAuctions, fetchSoldItems, fetchBoughtItems } = useProfileStore();
   const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
     fetchBiddingHistory();
     fetchProfile();
     fetchYourAuctions();
-  }, [fetchBiddingHistory,fetchProfile,fetchYourAuctions]);
+    fetchSoldItems();
+    fetchBoughtItems();
+  }, [fetchBiddingHistory, fetchProfile, fetchYourAuctions, fetchSoldItems, fetchBoughtItems]);
 
   return (
     <div className="min-h-screen container mx-auto px-4 pt-20">
@@ -38,6 +41,12 @@ const ProfilePage = () => {
           Bought Items
         </button>
         <button
+          className={`tab tab-bordered ${activeTab === "sold" ? "tab-active" : ""}`}
+          onClick={() => setActiveTab("sold")}
+        >
+          Sold Items
+        </button>
+        <button
           className={`tab tab-bordered ${activeTab === "your" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("your")}
         >
@@ -48,6 +57,7 @@ const ProfilePage = () => {
         {activeTab === "details" && <ProfileDetails />}
         {activeTab === "bidding" && <BiddingHistory />}
         {activeTab === "bought" && <BoughtItems />}
+        {activeTab === "sold" && <SoldItems />}
         {activeTab === "your" && <YourAuctions />}
       </div>
     </div>

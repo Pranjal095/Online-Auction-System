@@ -3,10 +3,14 @@ import { useProfileStore } from "../store/useProfileStore";
 import { useNavigate } from "react-router-dom";
 import { Star } from "lucide-react";
 
-const BoughtItems = () => {
-  const { boughtItems, loading, submitReview } = useProfileStore();
+const SoldItems = () => {
+  const { soldItems, loading, submitReview, fetchSoldItems } = useProfileStore();
   const navigate = useNavigate();
   const [ratings, setRatings] = useState({});
+
+  useEffect(() => {
+    fetchSoldItems();
+  }, [fetchSoldItems]);
 
   const handleClick = (id) => {
     navigate(`/auction/${id}`);
@@ -17,16 +21,16 @@ const BoughtItems = () => {
     submitReview(auctionId, starValue);
   };
 
-  if (loading && boughtItems.length === 0) {
-    return <p>Loading bought items...</p>;
+  if (loading && soldItems.length === 0) {
+    return <p>Loading sold items...</p>;
   }
-  if (!boughtItems || boughtItems.length === 0) {
-    return <p>No bought items available.</p>;
+  if (!soldItems || soldItems.length === 0) {
+    return <p>No sold items available.</p>;
   }
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">Bought Items</h2>
+      <h2 className="text-xl font-semibold mb-4">Sold Items</h2>
       <div className="overflow-x-auto">
         <table className="table w-full">
           <thead>
@@ -34,18 +38,18 @@ const BoughtItems = () => {
               <th>Auction ID</th>
               <th>Item Title</th>
               <th>Price</th>
-              <th>Purchase Date</th>
+              <th>Sale Date</th>
               <th>Review</th>
             </tr>
           </thead>
           <tbody>
-            {boughtItems.map((item, index) => (
+            {soldItems.map((item, index) => (
               <tr key={index} className="cursor-pointer">
                 <td onClick={() => handleClick(item.auction_id)}>{item.auction_id}</td>
                 <td onClick={() => handleClick(item.auction_id)}>{item.title}</td>
                 <td onClick={() => handleClick(item.auction_id)}>${item.price}</td>
                 <td onClick={() => handleClick(item.auction_id)}>
-                  {new Date(item.purchase_date).toLocaleString()}
+                  {new Date(item.sale_date).toLocaleString()}
                 </td>
                 <td>
                   <div className="flex space-x-1">
@@ -72,4 +76,4 @@ const BoughtItems = () => {
   );
 };
 
-export default BoughtItems;
+export default SoldItems;
