@@ -1,24 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useProfileStore } from "../store/useProfileStore";
 import { useNavigate } from "react-router-dom";
 import { Star } from "lucide-react";
 
 const SoldItems = () => {
-  const { soldItems, loading, submitReview, fetchSoldItems } = useProfileStore();
+  const { soldItems, loading } = useProfileStore();
   const navigate = useNavigate();
-  const [ratings, setRatings] = useState({});
-
-  useEffect(() => {
-    fetchSoldItems();
-  }, [fetchSoldItems]);
 
   const handleClick = (id) => {
     navigate(`/auction/${id}`);
-  };
-
-  const handleStarClick = (auctionId, starValue) => {
-    setRatings((prev) => ({ ...prev, [auctionId]: starValue }));
-    submitReview(auctionId, starValue);
   };
 
   if (loading && soldItems.length === 0) {
@@ -45,9 +35,15 @@ const SoldItems = () => {
           <tbody>
             {soldItems.map((item, index) => (
               <tr key={index} className="cursor-pointer">
-                <td onClick={() => handleClick(item.auction_id)}>{item.auction_id}</td>
-                <td onClick={() => handleClick(item.auction_id)}>{item.title}</td>
-                <td onClick={() => handleClick(item.auction_id)}>${item.price}</td>
+                <td onClick={() => handleClick(item.auction_id)}>
+                  {item.auction_id}
+                </td>
+                <td onClick={() => handleClick(item.auction_id)}>
+                  {item.title}
+                </td>
+                <td onClick={() => handleClick(item.auction_id)}>
+                  ${item.price}
+                </td>
                 <td onClick={() => handleClick(item.auction_id)}>
                   {new Date(item.sale_date).toLocaleString()}
                 </td>
@@ -57,12 +53,11 @@ const SoldItems = () => {
                       <Star
                         key={star}
                         size={20}
-                        className={`cursor-pointer transition-colors ${
-                          star <= (ratings[item.auction_id] || 0)
+                        className={`transition-colors ${
+                          star <= (item.review || 0)
                             ? "text-primary"
                             : "text-base-content/30"
                         }`}
-                        onClick={() => handleStarClick(item.auction_id, star)}
                       />
                     ))}
                   </div>

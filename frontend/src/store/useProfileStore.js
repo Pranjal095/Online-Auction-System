@@ -57,7 +57,7 @@ export const useProfileStore = create((set) => ({
     try {
       // Uncomment when backend is ready:
       // const response = await axiosInstance.get("/profile/sold-items");
-      // set({ soldItems: response.data.soldItems, loading: false });
+      // set({ soldItems: response.data, loading: false });
       
       // Dummy sold items:
       const dummySold = [
@@ -66,7 +66,8 @@ export const useProfileStore = create((set) => ({
           auction_id: 2,
           title: "Antique Vase",
           price: 250.0,
-          sold_date: "2025-04-02T14:05:00Z",
+          sale_date: "2025-04-02T14:05:00Z",
+          review: 3,
         },
       ];
       set({ soldItems: dummySold, loading: false });
@@ -81,8 +82,8 @@ export const useProfileStore = create((set) => ({
     set({ loading: true, error: null });
     try {
       // Uncomment when backend is ready:
-      // const response = await axiosInstance.get("/profile/sold-items");
-      // set({ soldItems: response.data.soldItems, loading: false });
+      // const response = await axiosInstance.get("/profile/bought-items");
+      // set({ boughtItems: response.data, loading: false });
       
       // Dummy sold items:
       const dummyBought = [
@@ -102,9 +103,10 @@ export const useProfileStore = create((set) => ({
     }
   },
 
-  submitReview: async (auctionId, starValue) => {
-    console.log(auctionId);
-    console.log(starValue);
+  submitReview: async (auction_id, star_value) => {
+    // const response = await axiosInstance.post("/api/review/", {auctionId, starValue})
+    console.log(auction_id);
+    console.log(star_value);
   },
 
   // Fetch auctions for the seller

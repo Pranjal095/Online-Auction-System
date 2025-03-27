@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuctionStore } from "../store/useAuctionStore";
-import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { Trash } from "lucide-react";
 import getLocalTime from "../helpers/getLocalTime";
 
 const AuctionPage = () => {
   const { auction_id } = useParams();
-  const { currentAuction, fetchAuction, placeBid, loading, deleteAuction, updateAuctionEndTime } = useAuctionStore();
+  const { 
+    currentAuction, fetchAuction, placeBid, placeAutomatedBid, loading, deleteAuction, updateAuctionEndTime } = useAuctionStore();
   const { user } = useAuthStore();
   const [bidAmount, setBidAmount] = useState("");
+  const [automatedBidAmount, setAutomatedBidAmount] = useState("");
   const [newEndTime, setNewEndTime] = useState("");
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     if (auction_id) {
       fetchAuction(auction_id);
-      
+
       const wsUrl = import.meta.env.VITE_BACKEND_URL 
         ? import.meta.env.VITE_BACKEND_URL.replace('http', 'ws') + '/ws'
         : 'ws://localhost:8000/ws';
@@ -31,7 +32,7 @@ const AuctionPage = () => {
       ws.onerror = (error) => {
         console.error('WebSocket error:', error);
       };
-      
+
       return () => {
         ws.close();
       };
@@ -43,7 +44,15 @@ const AuctionPage = () => {
     if (!bidAmount) return;
     await placeBid(auction_id, parseFloat(bidAmount));
     setBidAmount("");
-    window.location.href = `/auction/${auction_id}`;
+    // window.location.href = `/auction/${auction_id}`;
+  };
+
+  const handleAutomatedBidSubmit = async (e) => {
+    e.preventDefault();
+    if (!automatedBidAmount) return;
+    await placeAutomatedBid(auction_id, parseFloat(automatedBidAmount));
+    setAutomatedBidAmount("");
+    // window.location.href = `/auction/${auction_id}`;
   };
 
   const handleDelete = async () => {
@@ -55,7 +64,6 @@ const AuctionPage = () => {
 
   const handleEndTimeChange = async () => {
     if (!newEndTime) return;
-
     await updateAuctionEndTime(auction_id, getLocalTime(newEndTime));
     fetchAuction(auction_id);
   };
@@ -119,6 +127,26 @@ const AuctionPage = () => {
                   <span>Total Bids:</span>
                   <span className="badge badge-neutral">{currentAuction.bid_count || 0}</span>
                 </div>
+                { currentAuction.seller_id !== user.id && (
+                <>
+                <div className="flex justify-between items-center">
+                  <span>Your Current Bid:</span>
+                  <span className="font-mono">
+                    {currentAuction.current_user_bid 
+                      ? `$${currentAuction.current_user_bid.toFixed(2)}`
+                      : "None"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Your Automated Bid:</span>
+                  <span className="font-mono">
+                    {currentAuction.current_user_bid 
+                      ? `$${currentAuction.current_automated_bid.toFixed(2)}`
+                      : "None"}
+                  </span>
+                </div>
+                </>
+                )}
               </div>
             </div>
             
@@ -162,33 +190,63 @@ const AuctionPage = () => {
           )}
 
           {currentAuction.status === "open" && user.id !== currentAuction.seller_id && !user.is_admin && (
-            <div className="mt-6 bg-base-100 p-4 rounded-xl border border-primary/30">
-              <h3 className="text-2xl font-semibold mb-4 text-center">Place Your Bid</h3>
-              <form onSubmit={handleBidSubmit} className="flex flex-col gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Bid Amount ($)</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={currentAuction.highest_bid > 0 ? currentAuction.highest_bid + 0.01 : currentAuction.starting_bid}
-                    placeholder="Enter your bid amount"
-                    className="input input-bordered w-full"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
-                    required
-                  />
-                </div>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary btn-block"
-                  disabled={loading}
-                >
-                  {loading ? "Processing..." : "Place Bid"}
-                </button>
-              </form>
-            </div>
+            <>
+              <div className="mt-6 bg-base-100 p-4 rounded-xl border border-primary/30">
+                <h3 className="text-2xl font-semibold mb-4 text-center">Place Your Bid</h3>
+                <form onSubmit={handleBidSubmit} className="flex flex-col gap-4">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Bid Amount ($)</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={currentAuction.highest_bid > 0 ? currentAuction.highest_bid + 0.01 : currentAuction.starting_bid + 0.01}
+                      placeholder="Enter your bid amount"
+                      className="input input-bordered w-full"
+                      value={bidAmount}
+                      onChange={(e) => setBidAmount(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary btn-block"
+                    disabled={loading}
+                  >
+                    {loading ? "Processing..." : "Place Bid"}
+                  </button>
+                </form>
+              </div>
+
+              <div className="mt-6 bg-base-100 p-4 rounded-xl border border-secondary/30">
+                <h3 className="text-2xl font-semibold mb-4 text-center">Place Automated Bid</h3>
+                <form onSubmit={handleAutomatedBidSubmit} className="flex flex-col gap-4">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Maximum Bid Amount ($)</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={currentAuction.highest_bid > 0 ? currentAuction.highest_bid + 0.01 : currentAuction.starting_bid}
+                      placeholder="Enter your maximum bid amount"
+                      className="input input-bordered w-full"
+                      value={automatedBidAmount}
+                      onChange={(e) => setAutomatedBidAmount(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <button 
+                    type="submit" 
+                    className="btn btn-secondary btn-block"
+                    disabled={loading}
+                  >
+                    {loading ? "Processing..." : "Place Automated Bid"}
+                  </button>
+                </form>
+              </div>
+            </>
           )}
         </div>
       </div>
