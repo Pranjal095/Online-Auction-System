@@ -93,13 +93,13 @@ export const useAuctionStore = create((set, get) => ({
       const response = await axiosInstance.post(`/api/auctions/${auction_id}/automated-bid`, { automated_bid_amount });
       const updatedAuction = response.data;
       set({ currentAuction: updatedAuction, loading: false });
-      toast.success("Bid placed successfully!");
+      toast.success("Automated bid placed successfully!");
     } catch (err) {
       const errorMsg =
         err.response && err.response.data
           ? err.response.data.error
           : err.message;
-      console.error("placeBid error:", errorMsg);
+      console.error("placeAutomatedBid error:", errorMsg);
       set({ error: errorMsg, loading: false });
       toast.error(errorMsg);
     }
@@ -111,13 +111,13 @@ export const useAuctionStore = create((set, get) => ({
       const response = await axiosInstance.post(`/api/auctions/${auction_id}/update-bid`, { bid_amount }); 
       const updatedAuction = response.data;
       set({ currentAuction: updatedAuction, loading: false });
-      toast.success("Bid placed successfully!");
+      toast.success("Highest Bid Updated!");
     } catch (err) {
       const errorMsg =
         err.response && err.response.data
           ? err.response.data.error
           : err.message;
-      console.error("placeBid error:", errorMsg);
+      console.error("updateBid error:", errorMsg);
       set({ error: errorMsg, loading: false });
       toast.error(errorMsg);
     }

@@ -45,6 +45,7 @@ const AuctionPage = () => {
     if (parseFloat(bidAmount) + 1 <= currentAuction.highest_automated_bid){
       await updateBid(auction_id, parseFloat(bidAmount) + 1);
       window.alert("The highest bid has been updated as another user has placed an automated bid on this item.");
+      setBidAmount("");
       return;
     }
     await placeBid(auction_id, parseFloat(bidAmount));

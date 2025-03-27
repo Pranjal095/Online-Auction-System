@@ -19,6 +19,7 @@ export const useProfileStore = create((set) => ({
       set({ profile: response.data, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
+      console.error("fetchProfile error:", err);
       set({ error: errorMsg, loading: false });
       toast.error(errorMsg);
     }
@@ -33,6 +34,7 @@ export const useProfileStore = create((set) => ({
       toast.success("Profile updated successfully!");
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
+      console.error("updateProfile error:", err);
       set({ error: errorMsg, loading: false });
       toast.error(errorMsg);
     }
@@ -46,6 +48,7 @@ export const useProfileStore = create((set) => ({
       set({ biddingHistory: response.data, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
+      console.error("fetchBiddingHistory error:", err);
       set({ error: errorMsg, loading: false });
       toast.error(errorMsg);
     }
@@ -73,6 +76,7 @@ export const useProfileStore = create((set) => ({
       set({ soldItems: dummySold, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
+      console.error("fetchSoldItems error:", err);
       set({ error: errorMsg, loading: false });
       toast.error(errorMsg);
     }
@@ -98,15 +102,23 @@ export const useProfileStore = create((set) => ({
       set({ boughtItems: dummyBought, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
+      console.error("fetchBoughtItems error:", err);
       set({ error: errorMsg, loading: false });
       toast.error(errorMsg);
     }
   },
 
   submitReview: async (auction_id, star_value) => {
-    // const response = await axiosInstance.post("/api/review/", {auctionId, starValue})
-    console.log(auction_id);
-    console.log(star_value);
+    set({ loading: true, error: null });
+    try {
+      const response = await axiosInstance.post("/api/review/", {auction_id, star_value})
+      set({ loading: false });
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || err.message;
+      console.error("submitReview error:", err);
+      set({ error: errorMsg, loading: false });
+      toast.error(errorMsg);
+    }
   },
 
   // Fetch auctions for the seller
@@ -117,6 +129,7 @@ export const useProfileStore = create((set) => ({
       set({ yourAuctions: response.data, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
+      console.error("fetchYourAuctions error:", err);
       set({ error: errorMsg, loading: false });
       toast.error(errorMsg);
     }
