@@ -8,7 +8,7 @@ import getLocalTime from "../helpers/getLocalTime";
 const AuctionPage = () => {
   const { auction_id } = useParams();
   const { 
-    currentAuction, fetchAuction, placeBid, placeAutomatedBid, loading, deleteAuction, updateAuctionEndTime } = useAuctionStore();
+    currentAuction, fetchAuction, placeBid, placeAutomatedBid, loading, deleteAuction, updateAuctionEndTime, updateBid } = useAuctionStore();
   const { user } = useAuthStore();
   const [bidAmount, setBidAmount] = useState("");
   const [automatedBidAmount, setAutomatedBidAmount] = useState("");
@@ -42,9 +42,13 @@ const AuctionPage = () => {
   const handleBidSubmit = async (e) => {
     e.preventDefault();
     if (!bidAmount) return;
+    if (parseFloat(bidAmount) + 1 <= currentAuction.highest_automated_bid){
+      await updateBid(auction_id, parseFloat(bidAmount) + 1);
+      window.alert("The highest bid has been updated as another user has placed an automated bid on this item.");
+      return;
+    }
     await placeBid(auction_id, parseFloat(bidAmount));
     setBidAmount("");
-    // window.location.href = `/auction/${auction_id}`;
   };
 
   const handleAutomatedBidSubmit = async (e) => {
@@ -52,7 +56,6 @@ const AuctionPage = () => {
     if (!automatedBidAmount) return;
     await placeAutomatedBid(auction_id, parseFloat(automatedBidAmount));
     setAutomatedBidAmount("");
-    // window.location.href = `/auction/${auction_id}`;
   };
 
   const handleDelete = async () => {
@@ -124,8 +127,12 @@ const AuctionPage = () => {
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Total Bids:</span>
-                  <span className="badge badge-neutral">{currentAuction.bid_count || 0}</span>
+                  <span>Current Highest Automated Bid:</span>
+                  <span className="font-mono text-xl font-bold text-success">
+                    {currentAuction.highest_bid > 0 
+                      ? `$${currentAuction.highest_automated_bid?.toFixed(2)}` 
+                      : "No bids yet"}
+                  </span>
                 </div>
                 { currentAuction.seller_id !== user.id && (
                 <>

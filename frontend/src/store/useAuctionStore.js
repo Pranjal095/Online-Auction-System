@@ -105,6 +105,24 @@ export const useAuctionStore = create((set, get) => ({
     }
   },
 
+  updateBid: async (auction_id, automated_bid_amount) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await axiosInstance.post(`/api/auctions/${auction_id}/update-bid`, { bid_amount }); 
+      const updatedAuction = response.data;
+      set({ currentAuction: updatedAuction, loading: false });
+      toast.success("Bid placed successfully!");
+    } catch (err) {
+      const errorMsg =
+        err.response && err.response.data
+          ? err.response.data.error
+          : err.message;
+      console.error("placeBid error:", errorMsg);
+      set({ error: errorMsg, loading: false });
+      toast.error(errorMsg);
+    }
+  },
+
   deleteAuction: async (auctionId) => {
     set({ loading: true, error: null });
     try {
