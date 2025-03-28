@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 const AuctionPage = () => {
   const { auction_id } = useParams();
   const { 
-    currentAuction, fetchAuction, placeBid, placeAutomatedBid, loading, deleteAuction, updateAuctionEndTime, updateBid } = useAuctionStore();
+    currentAuction, fetchAuction, placeBid, placeAutomatedBid, loading, deleteAuction, updateAuctionEndTime } = useAuctionStore();
   const { user } = useAuthStore();
   const [bidAmount, setBidAmount] = useState("");
   const [automatedBidAmount, setAutomatedBidAmount] = useState("");
@@ -34,9 +34,8 @@ const AuctionPage = () => {
           const notification = newStatus === 'closed' 
             ? "This auction has ended!"
             : "This auction is now open for bidding!";
-          
           toast(notification);
-          
+
           fetchAuction(auction_id);
         }
       };
@@ -53,12 +52,6 @@ const AuctionPage = () => {
   const handleBidSubmit = async (e) => {
     e.preventDefault();
     if (!bidAmount) return;
-    if (parseFloat(bidAmount) + 1 <= currentAuction.highest_automated_bid){
-      await updateBid(auction_id, parseFloat(bidAmount) + 1);
-      window.alert("The highest bid has been updated as another user has placed an automated bid on this item.");
-      setBidAmount("");
-      return;
-    }
     await placeBid(auction_id, parseFloat(bidAmount));
     setBidAmount("");
   };

@@ -155,6 +155,7 @@ func PlaceBidHandler(c *gin.Context) {
 					"amount":      newBidAmount,
 					"user_id":     currentHighestBidder,
 					"highest_bid": updatedAuction.CurrentHighestBid,
+					"current_user_bid": bidRequest.Amount,
 				}
 
 				wsManager.BroadcastNewBid(auctionID, bidDetails)
@@ -195,8 +196,8 @@ func PlaceBidHandler(c *gin.Context) {
 		return
 	}
 
+	updatedAuction, _ := db.GetAuctionByID(c, auctionID, userID)
 	if wsManager != nil {
-		updatedAuction, _ := db.GetAuctionByID(c, auctionID, userID)
 		bidDetails := map[string]interface{}{
 			"auction_id":  auctionID,
 			"bid_id":      bidID,
@@ -209,7 +210,7 @@ func PlaceBidHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"bid_id":  bidID,
+		"auction":  updatedAuction,
 		"message": "Bid placed successfully",
 	})
 }
@@ -411,116 +412,121 @@ func EndAuctionsHandler(c *gin.Context) {
 
 // PlaceAutomatedBidHandler handles placing an automated bid on an auction
 func PlaceAutomatedBidHandler(c *gin.Context) {
-	userID, err := helpers.GetUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
-		return
-	}
+    userID, err := helpers.GetUserID(c)
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+        return
+    }
 
-	auctionID, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid auction ID"})
-		return
-	}
+    auctionID, err := strconv.Atoi(c.Param("id"))
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid auction ID"})
+        return
+    }
 
-	var bidRequest schema.AutomatedBidCreate
-	if err := c.BindJSON(&bidRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
-		return
-	}
+    var bidRequest schema.AutomatedBidCreate
+    if err := c.BindJSON(&bidRequest); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+        return
+    }
 
-	auction, err := db.GetAuctionByID(c, auctionID, userID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Auction not found"})
-		return
-	}
+    auction, err := db.GetAuctionByID(c, auctionID, userID)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Auction not found"})
+        return
+    }
 
-	if auction.Status != "open" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot bid on a closed or deleted auction"})
-		return
-	}
+    if auction.Status != "open" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot bid on a closed or deleted auction"})
+        return
+    }
 
-	if bidRequest.Amount <= auction.CurrentHighestBid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Automated bid amount must be higher than current highest bid"})
-		return
-	}
+    if bidRequest.Amount <= auction.CurrentHighestBid {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Automated bid amount must be higher than current highest bid"})
+        return
+    }
 
-	currentHighestBidder, err := db.GetCurrentHighestBidder(c, auctionID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve current highest bidder"})
-		return
-	}
+    var currentHighestBidder int
+    currentHighestBidder, err = db.GetCurrentHighestBidder(c, auctionID)
 
-	if currentHighestBidder == userID {
-		err = db.UpdateAutomatedBid(c, userID, auctionID, bidRequest.Amount)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update automated bid"})
-			return
-		}
+    if currentHighestBidder == userID {
+        err = db.UpdateAutomatedBid(c, userID, auctionID, bidRequest.Amount)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update automated bid"})
+            return
+        }
 
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Automated bid updated successfully",
-		})
-		return
-	}
+        c.JSON(http.StatusOK, gin.H{
+            "message": "Automated bid updated successfully",
+        })
+        return
+    }
 
-	highestAutomatedBid, err := db.GetHighestAutomatedBid(c, auctionID)
-	if err != nil {
-		fmt.Printf("Error getting highest automated bid: %v\n", err)
-	} else if highestAutomatedBid > 0 && highestAutomatedBid >= bidRequest.Amount {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "An automated bid higher than or equal to your automated bid already exists in the system",
-		})
-		return
-	}
+    highestAutomatedBid, err := db.GetHighestAutomatedBid(c, auctionID)
+    
+    if highestAutomatedBid > 0 && highestAutomatedBid >= bidRequest.Amount {
+        c.JSON(http.StatusOK, gin.H{
+            "message": "An automated bid higher than or equal to your automated bid already exists in the system",
+        })
+        return
+    }
 
-	bidAmount := highestAutomatedBid + 1
-	bidID, err := db.CreateBid(c, auctionID, userID, bidAmount)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set automated bid"})
-		return
-	}
+    var bidAmount float64
+    if highestAutomatedBid > 0 {
+        bidAmount = highestAutomatedBid + 1
+    } else if auction.CurrentHighestBid > 0 {
+        bidAmount = auction.CurrentHighestBid + 1
+    } else {
+        bidAmount = auction.StartingBid + 1
+    }
 
-	err = db.UpdateAutomatedBid(c, userID, auctionID, bidRequest.Amount)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set automated bid"})
-		return
-	}
+    bidID, err := db.CreateBid(c, auctionID, userID, bidAmount)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set automated bid"})
+        return
+    }
 
-	if currentHighestBidder > 0 {
-		prevBidderEmail, err := db.GetUserEmail(c, currentHighestBidder)
-		if err == nil && prevBidderEmail != "" {
-			username, _ := db.GetUserName(c, currentHighestBidder)
+    err = db.UpdateAutomatedBid(c, userID, auctionID, bidRequest.Amount)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set automated bid"})
+        return
+    }
 
-			go func() {
-				additionalData := map[string]interface{}{
-					"your_bid": auction.CurrentHighestBid,
-					"new_bid":  bidAmount,
-					"username": username,
-				}
+    if currentHighestBidder > 0 {
+        prevBidderEmail, err := db.GetUserEmail(c, currentHighestBidder)
+        if err == nil && prevBidderEmail != "" {
+            username, _ := db.GetUserName(c, currentHighestBidder)
 
-				if err := helpers.SendAuctionEmail(c, prevBidderEmail, helpers.NotificationOutbid, auctionID, additionalData); err != nil {
-					fmt.Printf("Failed to send outbid notification: %v\n", err)
-				}
-			}()
-		}
-	}
+            go func() {
+                additionalData := map[string]interface{}{
+                    "your_bid": auction.CurrentHighestBid,
+                    "new_bid":  bidAmount,
+                    "username": username,
+                }
 
-	if wsManager != nil {
-		updatedAuction, _ := db.GetAuctionByID(c, auctionID, userID)
-		bidDetails := map[string]interface{}{
-			"auction_id":  auctionID,
-			"bid_id":      bidID,
-			"amount":      bidAmount,
-			"user_id":     userID,
-			"highest_bid": updatedAuction.CurrentHighestBid,
-		}
+                if err := helpers.SendAuctionEmail(c, prevBidderEmail, helpers.NotificationOutbid, auctionID, additionalData); err != nil {
+                    fmt.Printf("Failed to send outbid notification: %v\n", err)
+                }
+            }()
+        }
+    }
 
-		wsManager.BroadcastNewBid(auctionID, bidDetails)
-	}
+	updatedAuction, _ := db.GetAuctionByID(c, auctionID, userID)
+    if wsManager != nil {
+        bidDetails := map[string]interface{}{
+            "auction_id":  auctionID,
+            "bid_id":      bidID,
+            "amount":      bidAmount,
+            "user_id":     userID,
+            "highest_bid": updatedAuction.CurrentHighestBid,
+			"current_automated_bid": bidRequest.Amount,
+        }
 
-	c.JSON(http.StatusCreated, gin.H{
-		"bid_id":  bidID,
-		"message": "Automated bid placed successfully",
-	})
+        wsManager.BroadcastNewBid(auctionID, bidDetails)
+    }
+
+    c.JSON(http.StatusCreated, gin.H{
+        "auction":  updatedAuction,
+        "message": "Automated bid placed successfully",
+    })
 }
