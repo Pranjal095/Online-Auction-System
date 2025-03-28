@@ -16,13 +16,17 @@
     <h3>Auction Results:</h3>
     <p><strong>Item:</strong> {{ .title }}</p>
     <p><strong>Description:</strong> {{ .description }}</p>
+    {{if .winner_name}}
     <p><strong>Final Price:</strong> ${{ .highest_bid }}</p>
+    {{else}}
+    <p><strong>Final Result:</strong> Item unsold</p>
+    {{end}}
     {{if .winner_name}}
     <p><strong>Winner:</strong> {{ .winner_name }}</p>
     {{else if .is_winner}}
     <p><strong>Winner:</strong> {{ .username }}</p>
     {{else}}
-    <p><strong>Status:</strong> No winner (reserve price not met)</p>
+    <p><strong>Status:</strong> No winner</p>
     {{end}}
     
     <p>Thank you for participating in our auction!</p>

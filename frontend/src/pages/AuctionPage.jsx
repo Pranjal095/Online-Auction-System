@@ -4,6 +4,7 @@ import { useAuctionStore } from "../store/useAuctionStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { Trash } from "lucide-react";
 import getLocalTime from "../helpers/getLocalTime";
+import toast from "react-hot-toast";
 
 const AuctionPage = () => {
   const { auction_id } = useParams();
@@ -26,6 +27,16 @@ const AuctionPage = () => {
       ws.onmessage = (event) => {
         const message = JSON.parse(event.data);
         if (message.type === 'new_bid' && message.data.auction_id === parseInt(auction_id)) {
+          fetchAuction(auction_id);
+        }
+        if (message.type === 'auction_status' && message.data.auction_id === parseInt(auction_id)) {
+          const newStatus = message.data.status;
+          const notification = newStatus === 'closed' 
+            ? "This auction has ended!"
+            : "This auction is now open for bidding!";
+          
+          toast(notification);
+          
           fetchAuction(auction_id);
         }
       };

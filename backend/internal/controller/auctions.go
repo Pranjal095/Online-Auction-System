@@ -319,71 +319,94 @@ func UpdateAuctionEndTimeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, updatedAuction)
 }
 
-// EndAuctionsHandler processes auctions that have ended
+// EndAuctionsHandler processes auctions that have ended or should be opened
 func EndAuctionsHandler(c *gin.Context) {
-	endedAuctions, err := db.GetEndedAuctionsToProcess(c)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get ended auctions"})
-		return
-	}
+    auctionsToOpen, err := db.GetAuctionsToOpen(c)
+    if err != nil {
+        fmt.Printf("Failed to get auctions to open: %v\n", err)
+    } else {
+        for _, auction := range auctionsToOpen {
+            err = db.UpdateAuctionStatus(c, auction.AuctionID, "open")
+            if err != nil {
+                continue
+            }
+            
+            if wsManager != nil {
+                updatedAuction, _ := db.GetAuctionByID(c, auction.AuctionID, auction.SellerID)
+                wsManager.BroadcastNewAuction(updatedAuction)
+				wsManager.BroadcastAuctionStatus(auction.AuctionID, "open", updatedAuction)
+            }
+        }
+    }
 
-	for _, auction := range endedAuctions {
-		winnerID, highestBid, err := db.GetHighestBidder(c, auction.AuctionID)
-		if err != nil {
-			continue
+    endedAuctions, err := db.GetAuctionsToClose(c)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get ended auctions"})
+        return
+    }
+
+    for _, auction := range endedAuctions {
+        winnerID, highestBid, err := db.GetHighestBidder(c, auction.AuctionID)
+        if err != nil {
+            continue
+        }
+
+        err = db.UpdateAuctionStatus(c, auction.AuctionID, "closed")
+        if err != nil {
+            continue
+        }
+
+		if wsManager != nil {
+            updatedAuction, _ := db.GetAuctionByID(c, auction.AuctionID, auction.SellerID)
+            wsManager.BroadcastAuctionStatus(auction.AuctionID, "closed", updatedAuction)
+        }
+
+        if winnerID > 0 && highestBid > 0 {
+            _, err := db.CreateTransaction(c, auction.AuctionID)
+            if err != nil {
+                continue
+            }
 		}
 
-		err = db.UpdateAuctionStatus(c, auction.AuctionID, "closed")
-		if err != nil {
-			continue
+		sellerEmail, _ := db.GetUserEmail(c, auction.SellerID)
+		sellerUsername, _ := db.GetUserName(c, auction.SellerID)
+		if sellerEmail != "" {
+			go func() {
+				additionalData := map[string]interface{}{
+					"is_seller":      true,
+					"username":       sellerUsername,
+				}
+
+				if winnerID > 0 {
+					winnerName, _ := db.GetUserName(c, winnerID)
+					additionalData["winner_name"] = winnerName
+					additionalData["highest_bid"] =     highestBid
+				}
+
+				helpers.SendAuctionEmail(c, sellerEmail, helpers.NotificationAuctionEnd, auction.AuctionID, additionalData)
+			}()
 		}
 
-		if winnerID > 0 && highestBid > 0 {
-			transactionID, err := db.CreateTransaction(c, auction.AuctionID)
-			if err != nil {
-				continue
-			}
+		winnerEmail, _ := db.GetUserEmail(c, winnerID)
+		winnerUsername, _ := db.GetUserName(c, winnerID)
+		if winnerEmail != "" {
+			winnerEmailCopy := winnerEmail
+			
+			go func() {
+				additionalData := map[string]interface{}{
+					"is_winner":      true,
+					"username":       winnerUsername,
+					"highest_bid":    highestBid,
+				}
 
-			sellerEmail, _ := db.GetUserEmail(c, auction.SellerID)
-			sellerUsername, _ := db.GetUserName(c, auction.SellerID)
-			if sellerEmail != "" {
-				go func(auction schema.AuctionResponse, sellerEmail string) {
-					additionalData := map[string]interface{}{
-						"is_seller":      true,
-						"transaction_id": transactionID,
-						"username":       sellerUsername,
-						"highest_bid":    highestBid,
-					}
-
-					if winnerID > 0 {
-						winnerName, _ := db.GetUserName(c, winnerID)
-						additionalData["winner_name"] = winnerName
-					}
-
-					helpers.SendAuctionEmail(c, sellerEmail, helpers.NotificationAuctionEnd, auction.AuctionID, additionalData)
-				}(auction, sellerEmail)
-			}
-
-			winnerEmail, _ := db.GetUserEmail(c, winnerID)
-			winnerUsername, _ := db.GetUserName(c, winnerID)
-			if winnerEmail != "" {
-				go func(auction schema.AuctionResponse, winnerEmail string) {
-					additionalData := map[string]interface{}{
-						"is_winner":      true,
-						"transaction_id": transactionID,
-						"username":       winnerUsername,
-						"highest_bid":    highestBid,
-					}
-
-					helpers.SendAuctionEmail(c, winnerEmail, helpers.NotificationAuctionEnd, auction.AuctionID, additionalData)
-				}(auction, winnerEmail)
-			}
+				helpers.SendAuctionEmail(c, winnerEmailCopy, helpers.NotificationAuctionEnd, auction.AuctionID, additionalData)
+			}()
 		}
-	}
+    }
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Processed ended auctions",
-	})
+    c.JSON(http.StatusOK, gin.H{
+        "message": "Processed auctions",
+    })
 }
 
 // PlaceAutomatedBidHandler handles placing an automated bid on an auction

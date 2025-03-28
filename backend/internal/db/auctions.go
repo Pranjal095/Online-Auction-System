@@ -22,12 +22,17 @@ func CreateItem(c context.Context, sellerID int, title, description string, star
 // CreateAuction creates a new auction for an item
 func CreateAuction(c context.Context, itemID int, startTime, endTime time.Time) (int, error) {
 	var auctionID int
+	auctionStatus := "open"
+
+	if startTime.After(time.Now()) {
+		auctionStatus = "closed"
+	}
+
 	err := config.DB.QueryRow(c,
-		"INSERT INTO auctions (item_id, start_time, end_time) VALUES ($1, $2, $3) RETURNING auction_id",
-		itemID, startTime, endTime).Scan(&auctionID)
+		"INSERT INTO auctions (item_id, start_time, end_time, auction_status) VALUES ($1, $2, $3, $4) RETURNING auction_id",
+		itemID, startTime, endTime, auctionStatus).Scan(&auctionID)
 
 	if err == nil {
-		// Add the seller as a participant
 		_, err = config.DB.Exec(c,
 			`INSERT INTO auction_participants (auction_id, user_id, user_role) 
              SELECT $1, seller_id, 'seller' FROM items WHERE item_id = $2`,
@@ -73,11 +78,11 @@ func GetAuctions(c context.Context) ([]schema.AuctionResponse, error) {
 
 // GetAuctionByID retrieves details of a specific auction
 func GetAuctionByID(c context.Context, auctionID int, userID int) (schema.AuctionResponse, error) {
-    var auction schema.AuctionResponse
+	var auction schema.AuctionResponse
 	var currentUserBid sql.NullFloat64
 	var currentAutomatedBid sql.NullFloat64
 
-    err := config.DB.QueryRow(c, `
+	err := config.DB.QueryRow(c, `
         SELECT a.auction_id, a.item_id, i.title, i.description, i.starting_bid,
             COALESCE(i.current_highest_bid, 0) as highest_bid, 
             i.seller_id, u.username as seller_name,
@@ -92,32 +97,32 @@ func GetAuctionByID(c context.Context, auctionID int, userID int) (schema.Auctio
         WHERE a.auction_id = $1
         GROUP BY a.auction_id, i.item_id, u.username, i.current_highest_bidder, i.highest_automated_bid
     `, auctionID, userID).Scan(
-        &auction.AuctionID,
-        &auction.ItemID,
-        &auction.Title,
-        &auction.Description,
-        &auction.StartingBid,
-        &auction.CurrentHighestBid,
-        &auction.SellerID,
-        &auction.SellerName,
-        &auction.StartTime,
-        &auction.EndTime,
-        &auction.Status,
-        &auction.ImagePath,
-        &auction.IsHighestBidder,
-        &currentUserBid,
-        &currentAutomatedBid,
-    )
+		&auction.AuctionID,
+		&auction.ItemID,
+		&auction.Title,
+		&auction.Description,
+		&auction.StartingBid,
+		&auction.CurrentHighestBid,
+		&auction.SellerID,
+		&auction.SellerName,
+		&auction.StartTime,
+		&auction.EndTime,
+		&auction.Status,
+		&auction.ImagePath,
+		&auction.IsHighestBidder,
+		&currentUserBid,
+		&currentAutomatedBid,
+	)
 
-	if (currentUserBid.Valid) {
+	if currentUserBid.Valid {
 		auction.CurrentUserBid = currentUserBid.Float64
 	}
 
-	if (currentAutomatedBid.Valid) {
+	if currentAutomatedBid.Valid {
 		auction.CurrentAutomatedBid = currentAutomatedBid.Float64
 	}
 
-    return auction, err
+	return auction, err
 }
 
 // CreateBid adds a new bid to an auction
@@ -339,58 +344,31 @@ func GetUserName(c context.Context, userID int) (string, error) {
 
 // GetHighestBidder returns the user ID and amount of the highest bidder for an auction
 func GetHighestBidder(c context.Context, auctionID int) (int, float64, error) {
-	var userID int
-	var amount float64
+    var userID sql.NullInt64
+    var amount sql.NullFloat64
 
-	err := config.DB.QueryRow(c, `
+    err := config.DB.QueryRow(c, `
         SELECT i.current_highest_bidder, i.current_highest_bid
         FROM auctions AS a 
-		JOIN items AS i ON a.item_id = i.item_id
-		WHERE a.auction_id = $1
+        JOIN items AS i ON a.item_id = i.item_id
+        WHERE a.auction_id = $1
     `, auctionID).Scan(&userID, &amount)
 
-	if err != nil {
-		return 0, 0, err
-	}
+    if err != nil {
+        return 0, 0, err
+    }
 
-	return userID, amount, nil
-}
+    winnerID := 0
+    if userID.Valid {
+        winnerID = int(userID.Int64)
+    }
+    
+    highestBid := 0.0
+    if amount.Valid {
+        highestBid = amount.Float64
+    }
 
-// GetEndedAuctionsToProcess returns auctions that have ended but haven't been processed yet
-func GetEndedAuctionsToProcess(c context.Context) ([]schema.AuctionResponse, error) {
-	rows, err := config.DB.Query(c, `
-        SELECT a.auction_id, a.item_id, i.title, i.description, i.starting_bid,
-		COALESCE(i.current_highest_bid, i.starting_bid) as highest_bid,
-		i.seller_id, u.username as seller_name,
-		a.start_time, a.end_time, a.auction_status, i.image_path
-        FROM auctions a
-        JOIN items i ON a.item_id = i.item_id
-        JOIN users u ON i.seller_id = u.user_id
-        LEFT JOIN bids b ON a.auction_id = b.auction_id
-        WHERE a.end_time < NOW() AND a.auction_status = 'open'
-        GROUP BY a.auction_id, i.item_id, u.username
-    `)
-
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var auctions []schema.AuctionResponse
-	for rows.Next() {
-		var auction schema.AuctionResponse
-		err := rows.Scan(
-			&auction.AuctionID, &auction.ItemID, &auction.Title, &auction.Description,
-			&auction.StartingBid, &auction.CurrentHighestBid, &auction.SellerID, &auction.SellerName,
-			&auction.StartTime, &auction.EndTime, &auction.Status, &auction.ImagePath,
-		)
-		if err != nil {
-			return nil, err
-		}
-		auctions = append(auctions, auction)
-	}
-
-	return auctions, nil
+    return winnerID, highestBid, nil
 }
 
 // UpdateAuctionStatus updates the status of an auction
@@ -406,71 +384,71 @@ func UpdateAuctionStatus(c context.Context, auctionID int, status string) error 
 
 // UpdateAutomatedBid sets or updates the maximum automated bid amount for a user on an auction
 func UpdateAutomatedBid(c context.Context, userID int, auctionID int, amount float64) error {
-    tx, err := config.DB.Begin(c)
-    if err != nil {
-        return err
-    }
-    defer tx.Rollback(c)
+	tx, err := config.DB.Begin(c)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(c)
 
-    var itemID int
-    err = tx.QueryRow(c, `
+	var itemID int
+	err = tx.QueryRow(c, `
         SELECT item_id FROM auctions WHERE auction_id = $1
     `, auctionID).Scan(&itemID)
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    var existingBidID int
-    var existingAmount float64
-    err = tx.QueryRow(c, `
+	var existingBidID int
+	var existingAmount float64
+	err = tx.QueryRow(c, `
         SELECT bid_id, bid_amount FROM automated_bids 
         WHERE auction_id = $1 AND buyer_id = $2
     `, auctionID, userID).Scan(&existingBidID, &existingAmount)
 
-    if err != nil {
-        if err.Error() == "no rows in result set" {
-            _, err = tx.Exec(c, `
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			_, err = tx.Exec(c, `
                 INSERT INTO automated_bids (auction_id, buyer_id, bid_amount)
                 VALUES ($1, $2, $3)
             `, auctionID, userID, amount)
-        } else {
-            return err
-        }
-    } else {
-        _, err = tx.Exec(c, `
+		} else {
+			return err
+		}
+	} else {
+		_, err = tx.Exec(c, `
             UPDATE automated_bids 
             SET bid_amount = $3, bid_time = CURRENT_TIMESTAMP
             WHERE auction_id = $1 AND buyer_id = $2
         `, auctionID, userID, amount)
-    }
+	}
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    var currentHighestBidderID sql.NullInt32
-    err = tx.QueryRow(c, `
+	var currentHighestBidderID sql.NullInt32
+	err = tx.QueryRow(c, `
         SELECT current_highest_bidder FROM items WHERE item_id = $1
     `, itemID).Scan(&currentHighestBidderID)
 
-    if err != nil && err.Error() != "no rows in result set" {
-        return err
-    }
+	if err != nil && err.Error() != "no rows in result set" {
+		return err
+	}
 
-    if !currentHighestBidderID.Valid || int(currentHighestBidderID.Int32) == userID {
-        _, err = tx.Exec(c, `
+	if !currentHighestBidderID.Valid || int(currentHighestBidderID.Int32) == userID {
+		_, err = tx.Exec(c, `
             UPDATE items 
             SET highest_automated_bid = $1
             WHERE item_id = $2
         `, amount, itemID)
 
-        if err != nil {
-            return err
-        }
-    }
+		if err != nil {
+			return err
+		}
+	}
 
-    return tx.Commit(c)
+	return tx.Commit(c)
 }
 
 // GetHighestAutomatedBid returns the highest automated bid amount for an auction
@@ -507,4 +485,79 @@ func GetCurrentHighestBidder(c context.Context, auctionID int) (int, error) {
 	}
 
 	return bidderID, nil
+}
+
+// GetAuctionsToOpen returns auctions where start_time is in the past but status is not "open"
+func GetAuctionsToOpen(c context.Context) ([]schema.AuctionResponse, error) {
+	rows, err := config.DB.Query(c, `
+        SELECT a.auction_id, a.item_id, i.title, i.description, i.starting_bid,
+        COALESCE(i.current_highest_bid, i.starting_bid) as highest_bid,
+        i.seller_id, u.username as seller_name,
+        a.start_time, a.end_time, a.auction_status, i.image_path
+        FROM auctions a
+        JOIN items i ON a.item_id = i.item_id
+        JOIN users u ON i.seller_id = u.user_id
+        WHERE a.start_time <= NOW() 
+        AND a.end_time > NOW()
+        AND a.auction_status != 'open'
+        AND a.auction_status != 'deleted'
+    `)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var auctions []schema.AuctionResponse
+	for rows.Next() {
+		var auction schema.AuctionResponse
+		err := rows.Scan(
+			&auction.AuctionID, &auction.ItemID, &auction.Title, &auction.Description,
+			&auction.StartingBid, &auction.CurrentHighestBid, &auction.SellerID, &auction.SellerName,
+			&auction.StartTime, &auction.EndTime, &auction.Status, &auction.ImagePath,
+		)
+		if err != nil {
+			return nil, err
+		}
+		auctions = append(auctions, auction)
+	}
+
+	return auctions, rows.Err()
+}
+
+// GetAuctionsToClose returns auctions that have ended but haven't been processed yet
+func GetAuctionsToClose(c context.Context) ([]schema.AuctionResponse, error) {
+	rows, err := config.DB.Query(c, `
+        SELECT a.auction_id, a.item_id, i.title, i.description, i.starting_bid,
+        COALESCE(i.current_highest_bid, i.starting_bid) as highest_bid,
+        i.seller_id, u.username as seller_name,
+        a.start_time, a.end_time, a.auction_status, i.image_path
+        FROM auctions a
+        JOIN items i ON a.item_id = i.item_id
+        JOIN users u ON i.seller_id = u.user_id
+        WHERE a.end_time <= NOW()
+        AND a.auction_status != 'closed'
+        AND a.auction_status != 'deleted'
+    `)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var auctions []schema.AuctionResponse
+	for rows.Next() {
+		var auction schema.AuctionResponse
+		err := rows.Scan(
+			&auction.AuctionID, &auction.ItemID, &auction.Title, &auction.Description,
+			&auction.StartingBid, &auction.CurrentHighestBid, &auction.SellerID, &auction.SellerName,
+			&auction.StartTime, &auction.EndTime, &auction.Status, &auction.ImagePath,
+		)
+		if err != nil {
+			return nil, err
+		}
+		auctions = append(auctions, auction)
+	}
+
+	return auctions, rows.Err()
 }

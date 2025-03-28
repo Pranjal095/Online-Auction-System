@@ -126,7 +126,6 @@ const CreateAuctionPage = () => {
       <div className="card bg-base-200 shadow-xl p-6 max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-center">Create Auction</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Existing form fields */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium">
               Title
@@ -156,7 +155,6 @@ const CreateAuctionPage = () => {
             ></textarea>
           </div>
           
-          {/* New image upload field */}
           <div>
             <label htmlFor="image" className="block text-sm font-medium">
               Item Image (max 2MB)
@@ -188,6 +186,7 @@ const CreateAuctionPage = () => {
             <input
               type="number"
               step={1}
+              min={0}
               name="starting_bid"
               id="starting_bid"
               className="input input-bordered w-full"

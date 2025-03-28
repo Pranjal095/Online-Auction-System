@@ -53,9 +53,11 @@ const AuctionsPage = () => {
                 <p>
                   <strong>Current Highest Bid:</strong> ${auction.current_highest_bid}
                 </p>
-                <p>
-                  <strong>Status:</strong> {auction.status}
-                </p>
+                {user.is_admin &&
+                  <p>
+                    <strong>Status:</strong> {auction.status}
+                  </p>
+                }
                 <p>
                   <strong>Auction Ends:</strong>{" "}
                   {new Date(auction.end_time).toUTCString().slice(0,-4)}
