@@ -34,6 +34,7 @@ CREATE TABLE items (
     starting_bid DECIMAL(10,2) NOT NULL,
     current_highest_bid DECIMAL(10,2),
     current_highest_bidder INTEGER REFERENCES users(user_id),
+    highest_automated_bid DECIMAL(10,2),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -57,6 +58,13 @@ CREATE TABLE bids (
     bid_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE automated_bids (
+    bid_id SERIAL PRIMARY KEY,
+    auction_id INTEGER NOT NULL REFERENCES auctions(auction_id),
+    buyer_id INTEGER NOT NULL REFERENCES users(user_id),
+    bid_amount DECIMAL(10,2) NOT NULL CHECK (bid_amount > 0),
+    bid_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 --Keeps track of which users participated in a given auction and in what role (buyer or seller). A user might appear as a seller in one auction and as a buyer in another.
 CREATE TABLE auction_participants (
@@ -114,7 +122,7 @@ CREATE TABLE admin_delete_log (
 --Allows buyers (or sellers) to review their counterpart after a transaction, but honestly just to complete 10 tables. Again, it is not directly linked to any item, but linked to transactions table, which is linked to auctions, which is linked to item
 CREATE TABLE reviews (
     review_id SERIAL PRIMARY KEY,
-    transaction_id INTEGER NOT NULL REFERENCES transactions(transaction_id),
+    transaction_id INTEGER NOT NULL UNIQUE REFERENCES transactions(transaction_id),
     rating INTEGER CHECK (rating BETWEEN 1 AND 5) NOT NULL,
     review_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -212,6 +220,9 @@ CREATE INDEX IF NOT EXISTS idx_auctions_item ON auctions(item_id); -- Already ex
 -- Bids: Speed up bid analysis and user activity lookups
 CREATE INDEX IF NOT EXISTS idx_bids_auction_amount ON bids(auction_id, bid_amount DESC); -- For finding highest bids
 CREATE INDEX IF NOT EXISTS idx_bids_buyer_time ON bids(buyer_id, bid_time);
+
+-- Automated Bids: Speed up bid analysis and user activity lookups
+CREATE INDEX IF NOT EXISTS idx_automated_bids_auction_user ON automated_bids(auction_id, buyer_id, bid_time DESC);
 
 -- Auction Participants: Support user-centric queries
 CREATE INDEX IF NOT EXISTS idx_participants_user ON auction_participants(user_id);

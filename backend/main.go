@@ -8,6 +8,7 @@ import (
 	"Online-Auction-System/backend/internal/router"
 	"Online-Auction-System/backend/internal/controller"
 	"Online-Auction-System/backend/internal/websockets"
+	"Online-Auction-System/backend/internal/cronjob"
 )
 
 var wsManager *websockets.Manager
@@ -18,6 +19,7 @@ func init() {
 	wsManager = websockets.NewManager()
 	go wsManager.Run()
 	controller.SetWebSocketManager(wsManager)
+	cronjob.StartAuctionEndCron()
 }
 
 func main() {

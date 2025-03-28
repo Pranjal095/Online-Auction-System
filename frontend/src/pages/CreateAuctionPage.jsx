@@ -187,6 +187,7 @@ const CreateAuctionPage = () => {
             </label>
             <input
               type="number"
+              step={1}
               name="starting_bid"
               id="starting_bid"
               className="input input-bordered w-full"

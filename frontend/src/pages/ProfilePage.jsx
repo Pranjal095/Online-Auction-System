@@ -11,12 +11,12 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
-    fetchBiddingHistory();
     fetchProfile();
+    fetchBiddingHistory();
     fetchYourAuctions();
     fetchSoldItems();
     fetchBoughtItems();
-  }, [fetchBiddingHistory, fetchProfile, fetchYourAuctions, fetchSoldItems, fetchBoughtItems]);
+  }, [fetchProfile, fetchBiddingHistory, fetchYourAuctions, fetchSoldItems, fetchBoughtItems]);
 
   return (
     <div className="min-h-screen container mx-auto px-4 pt-20">

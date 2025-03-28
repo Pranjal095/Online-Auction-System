@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import { toast } from "react-hot-toast";
 
-export const useProfileStore = create((set) => ({
+export const useProfileStore = create((set, get) => ({
   profile: null,
   biddingHistory: [],
   boughtItems: [],
@@ -58,22 +58,8 @@ export const useProfileStore = create((set) => ({
   fetchSoldItems: async () => {
     set({ loading: true, error: null });
     try {
-      // Uncomment when backend is ready:
-      // const response = await axiosInstance.get("/profile/sold-items");
-      // set({ soldItems: response.data, loading: false });
-      
-      // Dummy sold items:
-      const dummySold = [
-        {
-          transaction_id: 1,
-          auction_id: 2,
-          title: "Antique Vase",
-          price: 250.0,
-          sale_date: "2025-04-02T14:05:00Z",
-          review: 3,
-        },
-      ];
-      set({ soldItems: dummySold, loading: false });
+      const response = await axiosInstance.get("/api/profile/sold");
+      set({ soldItems: response.data, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
       console.error("fetchSoldItems error:", err);
@@ -85,21 +71,8 @@ export const useProfileStore = create((set) => ({
   fetchBoughtItems: async () => {
     set({ loading: true, error: null });
     try {
-      // Uncomment when backend is ready:
-      // const response = await axiosInstance.get("/profile/bought-items");
-      // set({ boughtItems: response.data, loading: false });
-      
-      // Dummy sold items:
-      const dummyBought = [
-        {
-          transaction_id: 1,
-          auction_id: 2,
-          title: "Antique Vase",
-          price: 250.0,
-          purchase_date: "2025-04-02T14:05:00Z",
-        },
-      ];
-      set({ boughtItems: dummyBought, loading: false });
+      const response = await axiosInstance.get("/api/profile/bought");
+      set({ boughtItems: response.data, loading: false });
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
       console.error("fetchBoughtItems error:", err);
@@ -111,8 +84,10 @@ export const useProfileStore = create((set) => ({
   submitReview: async (auction_id, star_value) => {
     set({ loading: true, error: null });
     try {
-      const response = await axiosInstance.post("/api/review/", {auction_id, star_value})
+      const response = await axiosInstance.post("/api/reviews", {auction_id: auction_id, rating: star_value})
       set({ loading: false });
+      toast.success("Review submitted successfully!");
+      await get().fetchBoughtItems();
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message;
       console.error("submitReview error:", err);

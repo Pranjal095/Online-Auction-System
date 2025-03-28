@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -58,7 +59,7 @@ func CreateAuctionHandler(c *gin.Context) {
 	}
 
 	if wsManager != nil {
-		auction, _ := db.GetAuctionByID(c, auctionID)
+		auction, _ := db.GetAuctionByID(c, auctionID, userID)
 		wsManager.BroadcastNewAuction(auction)
 	}
 
@@ -82,15 +83,21 @@ func GetAuctionsHandler(c *gin.Context) {
 
 // GetAuctionHandler retrieves details of a specific auction
 func GetAuctionHandler(c *gin.Context) {
+	userID, err := helpers.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
 	auctionID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid auction ID"})
 		return
 	}
 
-	auction, err := db.GetAuctionByID(c, auctionID)
+	auction, err := db.GetAuctionByID(c, auctionID, userID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Auction not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -117,15 +124,47 @@ func PlaceBidHandler(c *gin.Context) {
 		return
 	}
 
-	auction, err := db.GetAuctionByID(c, auctionID)
+	auction, err := db.GetAuctionByID(c, auctionID, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Auction not found"})
 		return
 	}
 
-	if bidRequest.Amount <= auction.HighestBid {
+	if bidRequest.Amount <= auction.CurrentHighestBid {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Bid amount must be higher than current highest bid"})
 		return
+	}
+
+	currentHighestBidder, err := db.GetCurrentHighestBidder(c, auctionID)
+
+	highestAutomatedBid, err := db.GetHighestAutomatedBid(c, auctionID)
+	if err == nil && highestAutomatedBid > 0 && currentHighestBidder != userID {
+		if highestAutomatedBid > bidRequest.Amount {
+			newBidAmount := bidRequest.Amount + 1
+
+			_, err := db.CreateBid(c, auctionID, currentHighestBidder, newBidAmount)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process automated bid"})
+				return
+			}
+
+			if wsManager != nil {
+				updatedAuction, _ := db.GetAuctionByID(c, auctionID, userID)
+				bidDetails := map[string]interface{}{
+					"auction_id":  auctionID,
+					"amount":      newBidAmount,
+					"user_id":     currentHighestBidder,
+					"highest_bid": updatedAuction.CurrentHighestBid,
+				}
+
+				wsManager.BroadcastNewBid(auctionID, bidDetails)
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Your bid was immediately outbid by an automated bidder",
+			})
+			return
+		}
 	}
 
 	previousBidder, prevBidAmount, err := db.GetHighestBidder(c, auctionID)
@@ -152,18 +191,18 @@ func PlaceBidHandler(c *gin.Context) {
 
 	bidID, err := db.CreateBid(c, auctionID, userID, bidRequest.Amount)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	if wsManager != nil {
-		updatedAuction, _ := db.GetAuctionByID(c, auctionID)
+		updatedAuction, _ := db.GetAuctionByID(c, auctionID, userID)
 		bidDetails := map[string]interface{}{
 			"auction_id":  auctionID,
 			"bid_id":      bidID,
 			"amount":      bidRequest.Amount,
 			"user_id":     userID,
-			"highest_bid": updatedAuction.HighestBid,
+			"highest_bid": updatedAuction.CurrentHighestBid,
 		}
 
 		wsManager.BroadcastNewBid(auctionID, bidDetails)
@@ -194,7 +233,13 @@ func GetBidsHandler(c *gin.Context) {
 
 // DeleteAuctionHandler handles deleting an auction (setting status to deleted)
 func DeleteAuctionHandler(c *gin.Context) {
-	_, err := helpers.GetUserID(c)
+	userID, err := helpers.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	_, err = helpers.GetUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 		return
@@ -206,7 +251,7 @@ func DeleteAuctionHandler(c *gin.Context) {
 		return
 	}
 
-	_, err = db.GetAuctionByID(c, auctionID)
+	_, err = db.GetAuctionByID(c, auctionID, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Auction not found"})
 		return
@@ -223,7 +268,13 @@ func DeleteAuctionHandler(c *gin.Context) {
 
 // UpdateAuctionEndTimeHandler handles updating an auction's end time
 func UpdateAuctionEndTimeHandler(c *gin.Context) {
-	_, err := helpers.GetUserID(c)
+	userID, err := helpers.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	_, err = helpers.GetUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 		return
@@ -244,7 +295,7 @@ func UpdateAuctionEndTimeHandler(c *gin.Context) {
 		return
 	}
 
-	_, err = db.GetAuctionByID(c, auctionID)
+	_, err = db.GetAuctionByID(c, auctionID, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Auction not found"})
 		return
@@ -255,7 +306,7 @@ func UpdateAuctionEndTimeHandler(c *gin.Context) {
 		return
 	}
 
-	updatedAuction, err := db.UpdateAuctionEndTime(c, auctionID, request.NewEndTime)
+	updatedAuction, err := db.UpdateAuctionEndTime(c, auctionID, request.NewEndTime, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update auction end time"})
 		return
@@ -266,4 +317,187 @@ func UpdateAuctionEndTimeHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, updatedAuction)
+}
+
+// EndAuctionsHandler processes auctions that have ended
+func EndAuctionsHandler(c *gin.Context) {
+	endedAuctions, err := db.GetEndedAuctionsToProcess(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get ended auctions"})
+		return
+	}
+
+	for _, auction := range endedAuctions {
+		winnerID, highestBid, err := db.GetHighestBidder(c, auction.AuctionID)
+		if err != nil {
+			continue
+		}
+
+		err = db.UpdateAuctionStatus(c, auction.AuctionID, "closed")
+		if err != nil {
+			continue
+		}
+
+		if winnerID > 0 && highestBid > 0 {
+			transactionID, err := db.CreateTransaction(c, auction.AuctionID)
+			if err != nil {
+				continue
+			}
+
+			sellerEmail, _ := db.GetUserEmail(c, auction.SellerID)
+			sellerUsername, _ := db.GetUserName(c, auction.SellerID)
+			if sellerEmail != "" {
+				go func(auction schema.AuctionResponse, sellerEmail string) {
+					additionalData := map[string]interface{}{
+						"is_seller":      true,
+						"transaction_id": transactionID,
+						"username":       sellerUsername,
+						"highest_bid":    highestBid,
+					}
+
+					if winnerID > 0 {
+						winnerName, _ := db.GetUserName(c, winnerID)
+						additionalData["winner_name"] = winnerName
+					}
+
+					helpers.SendAuctionEmail(c, sellerEmail, helpers.NotificationAuctionEnd, auction.AuctionID, additionalData)
+				}(auction, sellerEmail)
+			}
+
+			winnerEmail, _ := db.GetUserEmail(c, winnerID)
+			winnerUsername, _ := db.GetUserName(c, winnerID)
+			if winnerEmail != "" {
+				go func(auction schema.AuctionResponse, winnerEmail string) {
+					additionalData := map[string]interface{}{
+						"is_winner":      true,
+						"transaction_id": transactionID,
+						"username":       winnerUsername,
+						"highest_bid":    highestBid,
+					}
+
+					helpers.SendAuctionEmail(c, winnerEmail, helpers.NotificationAuctionEnd, auction.AuctionID, additionalData)
+				}(auction, winnerEmail)
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Processed ended auctions",
+	})
+}
+
+// PlaceAutomatedBidHandler handles placing an automated bid on an auction
+func PlaceAutomatedBidHandler(c *gin.Context) {
+	userID, err := helpers.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	auctionID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid auction ID"})
+		return
+	}
+
+	var bidRequest schema.AutomatedBidCreate
+	if err := c.BindJSON(&bidRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	auction, err := db.GetAuctionByID(c, auctionID, userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Auction not found"})
+		return
+	}
+
+	if auction.Status != "open" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot bid on a closed or deleted auction"})
+		return
+	}
+
+	if bidRequest.Amount <= auction.CurrentHighestBid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Automated bid amount must be higher than current highest bid"})
+		return
+	}
+
+	currentHighestBidder, err := db.GetCurrentHighestBidder(c, auctionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve current highest bidder"})
+		return
+	}
+
+	if currentHighestBidder == userID {
+		err = db.UpdateAutomatedBid(c, userID, auctionID, bidRequest.Amount)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update automated bid"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Automated bid updated successfully",
+		})
+		return
+	}
+
+	highestAutomatedBid, err := db.GetHighestAutomatedBid(c, auctionID)
+	if err != nil {
+		fmt.Printf("Error getting highest automated bid: %v\n", err)
+	} else if highestAutomatedBid > 0 && highestAutomatedBid >= bidRequest.Amount {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "An automated bid higher than or equal to your automated bid already exists in the system",
+		})
+		return
+	}
+
+	bidAmount := highestAutomatedBid + 1
+	bidID, err := db.CreateBid(c, auctionID, userID, bidAmount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set automated bid"})
+		return
+	}
+
+	err = db.UpdateAutomatedBid(c, userID, auctionID, bidRequest.Amount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set automated bid"})
+		return
+	}
+
+	if currentHighestBidder > 0 {
+		prevBidderEmail, err := db.GetUserEmail(c, currentHighestBidder)
+		if err == nil && prevBidderEmail != "" {
+			username, _ := db.GetUserName(c, currentHighestBidder)
+
+			go func() {
+				additionalData := map[string]interface{}{
+					"your_bid": auction.CurrentHighestBid,
+					"new_bid":  bidAmount,
+					"username": username,
+				}
+
+				if err := helpers.SendAuctionEmail(c, prevBidderEmail, helpers.NotificationOutbid, auctionID, additionalData); err != nil {
+					fmt.Printf("Failed to send outbid notification: %v\n", err)
+				}
+			}()
+		}
+	}
+
+	if wsManager != nil {
+		updatedAuction, _ := db.GetAuctionByID(c, auctionID, userID)
+		bidDetails := map[string]interface{}{
+			"auction_id":  auctionID,
+			"bid_id":      bidID,
+			"amount":      bidAmount,
+			"user_id":     userID,
+			"highest_bid": updatedAuction.CurrentHighestBid,
+		}
+
+		wsManager.BroadcastNewBid(auctionID, bidDetails)
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"bid_id":  bidID,
+		"message": "Automated bid placed successfully",
+	})
 }

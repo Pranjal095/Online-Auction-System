@@ -51,7 +51,7 @@ const AuctionsPage = () => {
                   <strong>Starting Bid:</strong> ${auction.starting_bid}
                 </p>
                 <p>
-                  <strong>Current Highest Bid:</strong> ${auction.highest_bid}
+                  <strong>Current Highest Bid:</strong> ${auction.current_highest_bid}
                 </p>
                 <p>
                   <strong>Status:</strong> {auction.status}

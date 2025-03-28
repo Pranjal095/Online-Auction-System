@@ -45,7 +45,7 @@ const SoldItems = () => {
                   ${item.price}
                 </td>
                 <td onClick={() => handleClick(item.auction_id)}>
-                  {new Date(item.sale_date).toLocaleString()}
+                  {new Date(item.purchase_date).toLocaleString()}
                 </td>
                 <td>
                   <div className="flex space-x-1">

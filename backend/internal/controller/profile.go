@@ -109,3 +109,37 @@ func GetUserBidsHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, bids)
 }
+
+// GetUserSoldHandler retrieves items sold by the authenticated user
+func GetUserSoldHandler(c *gin.Context) {
+	userID, err := helpers.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	soldItems, err := db.GetSoldItems(c, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve sold items"})
+		return
+	}
+
+	c.JSON(http.StatusOK, soldItems)
+}
+
+// GetUserBoughtHandler retrieves items bought by the authenticated user
+func GetUserBoughtHandler(c *gin.Context) {
+	userID, err := helpers.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	boughtItems, err := db.GetBoughtItems(c, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve bought items"})
+		return
+	}
+
+	c.JSON(http.StatusOK, boughtItems)
+}

@@ -34,12 +34,19 @@ func SetupRoutes(router *gin.Engine) {
 		auctionGroup.GET("", controller.GetAuctionsHandler)
 		auctionGroup.GET("/:id", controller.GetAuctionHandler)
 		auctionGroup.GET("/:id/bids", controller.GetBidsHandler)
-		auctionGroup.DELETE("/:id", controller.DeleteAuctionHandler);
+		auctionGroup.DELETE("/:id", controller.DeleteAuctionHandler)
 		auctionGroup.PUT("/:id/update-end-time", controller.UpdateAuctionEndTimeHandler)
 		auctionGroup.POST("", controller.CreateAuctionHandler)
 		auctionGroup.POST("/:id/bid", controller.PlaceBidHandler)
+		auctionGroup.POST("/:id/automated-bid", controller.PlaceAutomatedBidHandler)
 		auctionGroup.POST("/upload", controller.UploadImageHandler)
 	}
+
+	cronGroup := router.Group("/api/cronjob")
+	{
+		cronGroup.POST("", controller.EndAuctionsHandler)
+	}
+
 	router.Static("/uploads", "./uploads")
 
 	profileGroup := router.Group("/api/profile")
@@ -49,5 +56,13 @@ func SetupRoutes(router *gin.Engine) {
 		profileGroup.PUT("", controller.UpdateProfileHandler)
 		profileGroup.GET("/auctions", controller.GetUserAuctionsHandler)
 		profileGroup.GET("/bids", controller.GetUserBidsHandler)
+		profileGroup.GET("/sold", controller.GetUserSoldHandler)
+		profileGroup.GET("/bought", controller.GetUserBoughtHandler)
+	}
+
+	reviewGroup := router.Group("/api/reviews")
+	reviewGroup.Use(middlewares.AuthMiddleware())
+	{
+		reviewGroup.POST("", controller.SubmitReviewHandler)
 	}
 }

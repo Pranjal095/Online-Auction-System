@@ -37,7 +37,7 @@ export const useAuctionStore = create((set, get) => ({
       const response = await axiosInstance.post("/api/auctions", data);
       set({ isCreating: false });
       if (!response.data.error) {
-        toast.success("Auction created successfully!");
+        toast.success(response.data.message);
       }
     } catch (err) {
       const errorMsg =
@@ -75,7 +75,7 @@ export const useAuctionStore = create((set, get) => ({
       const response = await axiosInstance.post(`/api/auctions/${auction_id}/bid`, { bid_amount });
       const updatedAuction = response.data;
       set({ currentAuction: updatedAuction, loading: false });
-      toast.success("Bid placed successfully!");
+      toast.success(response.data.message);
     } catch (err) {
       const errorMsg =
         err.response && err.response.data
@@ -91,9 +91,8 @@ export const useAuctionStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const response = await axiosInstance.post(`/api/auctions/${auction_id}/automated-bid`, { automated_bid_amount });
-      const updatedAuction = response.data;
-      set({ currentAuction: updatedAuction, loading: false });
-      toast.success("Automated bid placed successfully!");
+      set({ currentAuction: response.data, loading: false });
+      toast.success(response.data.message);
     } catch (err) {
       const errorMsg =
         err.response && err.response.data
@@ -105,30 +104,12 @@ export const useAuctionStore = create((set, get) => ({
     }
   },
 
-  updateBid: async (auction_id, automated_bid_amount) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await axiosInstance.post(`/api/auctions/${auction_id}/update-bid`, { bid_amount }); 
-      const updatedAuction = response.data;
-      set({ currentAuction: updatedAuction, loading: false });
-      toast.success("Highest Bid Updated!");
-    } catch (err) {
-      const errorMsg =
-        err.response && err.response.data
-          ? err.response.data.error
-          : err.message;
-      console.error("updateBid error:", errorMsg);
-      set({ error: errorMsg, loading: false });
-      toast.error(errorMsg);
-    }
-  },
-
   deleteAuction: async (auctionId) => {
     set({ loading: true, error: null });
     try {
       await axiosInstance.delete(`/api/auctions/${auctionId}`);
       set({ loading: false });
-      toast.success("Auction deleted successfully");
+      toast.success(response.data.message);
     } catch (err) {
       const errorMsg =
         err.response && err.response.data
@@ -145,7 +126,7 @@ export const useAuctionStore = create((set, get) => ({
     try {
       const response = await axiosInstance.put(`/api/auctions/${auctionId}/update-end-time`, { newEndTime });
       set({ loading: false });
-      toast.success("Auction updated successfully");
+      toast.success(response.data.message);
       const updatedAuction = response.data;
       set({ currentAuction: updatedAuction });
     } catch (err) {

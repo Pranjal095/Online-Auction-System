@@ -6,14 +6,27 @@ import { Star } from "lucide-react";
 const BoughtItems = () => {
   const { boughtItems, loading, submitReview } = useProfileStore();
   const navigate = useNavigate();
-  const [ratings, setRatings] = useState({});
+  const [rating, setRating] = useState({});
+
+  useEffect(() => {
+    if (boughtItems && boughtItems.length > 0) {
+      const initialRatings = {};
+      boughtItems.forEach(item => {
+        initialRatings[item.auction_id] = item.review || 0;
+      });
+      setRating(initialRatings);
+    }
+  }, [boughtItems]);
 
   const handleClick = (id) => {
     navigate(`/auction/${id}`);
   };
 
   const handleStarClick = (auctionId, starValue) => {
-    setRatings((prev) => ({ ...prev, [auctionId]: starValue }));
+    setRating(prev => ({
+      ...prev,
+      [auctionId]: starValue
+    }));
     submitReview(auctionId, starValue);
   };
 
@@ -54,7 +67,7 @@ const BoughtItems = () => {
                         key={star}
                         size={20}
                         className={`cursor-pointer transition-colors ${
-                          star <= (ratings[item.auction_id] || 0)
+                          star <= (rating[item.auction_id] || 0)
                             ? "text-primary"
                             : "text-base-content/30"
                         }`}

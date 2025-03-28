@@ -41,7 +41,7 @@ const YourAuctions = () => {
               >
                 <td>{auction.auction_id}</td>
                 <td>{auction.title}</td>
-                <td>${auction.highest_bid}</td>
+                <td>${auction.current_highest_bid}</td>
                 <td>{new Date(auction.end_time).toLocaleString()}</td>
                 <td>{auction.status}</td>
               </tr>

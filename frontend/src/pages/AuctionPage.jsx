@@ -122,16 +122,8 @@ const AuctionPage = () => {
                 <div className="flex justify-between items-center">
                   <span>Current Highest Bid:</span>
                   <span className="font-mono text-xl font-bold text-success">
-                    {currentAuction.highest_bid > 0 
-                      ? `$${currentAuction.highest_bid?.toFixed(2)}` 
-                      : "No bids yet"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Current Highest Automated Bid:</span>
-                  <span className="font-mono text-xl font-bold text-success">
-                    {currentAuction.highest_bid > 0 
-                      ? `$${currentAuction.highest_automated_bid?.toFixed(2)}` 
+                    {currentAuction.current_highest_bid > 0 
+                      ? `$${currentAuction.current_highest_bid?.toFixed(2)}` 
                       : "No bids yet"}
                   </span>
                 </div>
@@ -151,6 +143,15 @@ const AuctionPage = () => {
                     {currentAuction.current_user_bid 
                       ? `$${currentAuction.current_automated_bid.toFixed(2)}`
                       : "None"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Your Status:</span>
+                  <span className="font-mono">
+                    {currentAuction.is_highest_bidder 
+                      ? "Highest Bidder"
+                      : currentAuction.current_user_bid || currentAuction.current_automated_bid ? "Participant" : "Spectator"           
+                    }
                   </span>
                 </div>
                 </>
@@ -208,8 +209,8 @@ const AuctionPage = () => {
                     </label>
                     <input
                       type="number"
-                      step="0.01"
-                      min={currentAuction.highest_bid > 0 ? currentAuction.highest_bid + 0.01 : currentAuction.starting_bid + 0.01}
+                      step="1"
+                      min={currentAuction.current_highest_bid > 0 ? currentAuction.current_highest_bid + 1 : currentAuction.starting_bid + 1}
                       placeholder="Enter your bid amount"
                       className="input input-bordered w-full"
                       value={bidAmount}
@@ -236,8 +237,8 @@ const AuctionPage = () => {
                     </label>
                     <input
                       type="number"
-                      step="0.01"
-                      min={currentAuction.highest_bid > 0 ? currentAuction.highest_bid + 0.01 : currentAuction.starting_bid}
+                      step="1"
+                      min={currentAuction.highest_bid > 0 ? currentAuction.highest_bid + 1 : currentAuction.starting_bid}
                       placeholder="Enter your maximum bid amount"
                       className="input input-bordered w-full"
                       value={automatedBidAmount}
