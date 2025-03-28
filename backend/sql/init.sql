@@ -108,7 +108,7 @@ CREATE TABLE admin_delete_log (
     log_id SERIAL PRIMARY KEY,
     auction_id INTEGER REFERENCES auctions(auction_id),
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    changed_by SERIAL             -- e.g. admin username
+    changed_by SERIAL REFERENCES users(user_id)           -- e.g. admin username
 );
 
 --Allows buyers (or sellers) to review their counterpart after a transaction, but honestly just to complete 10 tables. Again, it is not directly linked to any item, but linked to transactions table, which is linked to auctions, which is linked to item
@@ -194,62 +194,6 @@ BEGIN
 END;
 $$;
 
--- Procedure for notifying to the customer
-CREATE PROCEDURE send_notification(p_auction_id integer, p_item_id integer)
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_auction_status VARCHAR(20);
-    v_auction_end TIMESTAMP;
-    v_item_title VARCHAR(255);
-    v_current_highest_bid NUMERIC(10,2);
-    v_seller_id INTEGER;
-    v_current_highest_bidder INTEGER;
-    v_seller_email VARCHAR(100);
-    v_seller_mobile VARCHAR(20);
-    v_buyer_email VARCHAR(100);
-    v_buyer_mobile VARCHAR(20);
-BEGIN
-    -- Retrieve auction details
-    SELECT auction_status, end_time 
-      INTO v_auction_status, v_auction_end
-      FROM auctions
-     WHERE auction_id = p_auction_id;
-     
-    -- Retrieve item details, including seller and highest bid info
-    SELECT title, current_highest_bid, seller_id, current_highest_bidder
-      INTO v_item_title, v_current_highest_bid, v_seller_id, v_current_highest_bidder
-      FROM items
-     WHERE item_id = p_item_id;
-     
-    -- Retrieve seller contact information
-    SELECT email, mobile_number
-      INTO v_seller_email, v_seller_mobile
-      FROM users
-     WHERE user_id = v_seller_id;
-     
-    -- If a winning bid exists, look up the buyer's details and simulate notifications to both parties.
-    IF v_current_highest_bid IS NOT NULL AND v_current_highest_bidder IS NOT NULL THEN
-        SELECT email, mobile_number
-          INTO v_buyer_email, v_buyer_mobile
-          FROM users
-         WHERE user_id = v_current_highest_bidder;
-         
-        RAISE NOTICE 'Auction % for item "%" closed at % with a winning bid of %.',
-                     p_auction_id, v_item_title, v_auction_end, v_current_highest_bid;
-                     
-        RAISE NOTICE 'Notification sent to Seller: [ID: %, Email: %, Mobile: %].',
-                     v_seller_id, v_seller_email, v_seller_mobile;
-                     
-        RAISE NOTICE 'Notification sent to Buyer: [ID: %, Email: %, Mobile: %].',
-                     v_current_highest_bidder, v_buyer_email, v_buyer_mobile;
-    ELSE
-        -- No bid was placed; notify the seller to relist or take further action.
-        RAISE NOTICE 'Auction % for item "%" closed with no bids. Notification sent to Seller: [ID: %, Email: %, Mobile: %].',
-                     p_auction_id, v_item_title, v_seller_id, v_seller_email, v_seller_mobile;
-    END IF;
-END;
-$$;
 
 /*CREATE TRIGGER log_items_changes
 AFTER UPDATE OR DELETE ON items
@@ -274,14 +218,6 @@ CREATE INDEX IF NOT EXISTS idx_participants_user ON auction_participants(user_id
 
 -- Transactions: Accelerate history lookups and joins
 CREATE INDEX IF NOT EXISTS idx_transactions_buyer_date ON transactions(transaction_date);
-
--- Delivery: Track shipment states efficiently
-CREATE INDEX IF NOT EXISTS idx_delivery_status ON deliveries(delivery_status);
-CREATE INDEX IF NOT EXISTS idx_delivery_transaction ON deliveries(transaction_id);
-
--- Payment: Monitor payment outcomes
-CREATE INDEX IF NOT EXISTS idx_payment_status ON payments(payment_status);
-CREATE INDEX IF NOT EXISTS idx_payment_transaction ON payments(transaction_id);
 
 -- Admin Log: Audit trail optimization
 CREATE INDEX IF NOT EXISTS idx_admin_log_table_deleted ON admin_delete_log(changed_at);
@@ -351,3 +287,6 @@ AFTER UPDATE OF end_time, auction_status ON auctions
 FOR EACH ROW
 WHEN (NEW.auction_status = 'open' AND NEW.end_time <= CURRENT_TIMESTAMP)
 EXECUTE FUNCTION check_auction_end();
+
+
+-- Add triggers for both logs on update in auctions table
