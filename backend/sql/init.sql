@@ -19,7 +19,7 @@ CREATE TABLE users (
     password VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     address VARCHAR(255) NOT NULL,       -- single address per user
-    mobile_number VARCHAR(20) NOT NULL,    -- single mobile number per user
+    mobile_number CHAR(10) NOT NULL,    -- single mobile number per user
     is_admin BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
