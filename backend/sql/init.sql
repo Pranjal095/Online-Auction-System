@@ -131,8 +131,6 @@ DROP FUNCTION IF EXISTS update_highest_bid() CASCADE;
 DROP TRIGGER IF EXISTS trg_update_highest_bid ON bids;
 DROP PROCEDURE IF EXISTS finalize_transaction(p_transaction_id integer);
 DROP PROCEDURE IF EXISTS send_notification(p_auction_id integer, p_item_id integer);
-DROP FUNCTION IF EXISTS log_admin_changes() CASCADE;
-DROP TRIGGER IF EXISTS log_items_changes ON items;
 DROP PROCEDURE IF EXISTS close_auction(p_auction_id integer);
 DROP FUNCTION IF EXISTS check_auction_end() CASCADE;
 DROP TRIGGER IF EXISTS trg_auction_end_check ON auctions;
@@ -198,16 +196,9 @@ BEGIN
      WHERE transaction_id = p_transaction_id
        AND payment_status = 'pending';
        
-    RAISE NOTICE 'Transaction % finalized; payment status updated to completed', p_transaction_id;
+    --RAISE NOTICE 'Transaction % finalized; payment status updated to completed', p_transaction_id;
 END;
 $$;
-
-
-/*CREATE TRIGGER log_items_changes
-AFTER UPDATE OR DELETE ON items
-FOR EACH ROW
-EXECUTE FUNCTION log_admin_changes();*/
--- Create a new trigger for logging admin changes
 
 -- Items: Focus on seller activity and status filtering
 CREATE INDEX IF NOT EXISTS idx_items_seller ON items(seller_id); -- Replaces individual seller_id/status indexes
@@ -301,3 +292,60 @@ EXECUTE FUNCTION check_auction_end();
 
 
 -- Add triggers for both logs on update in auctions table
+
+DROP PROCEDURE IF EXISTS send_notification(p_auction_id integer, p_item_id integer);
+
+CREATE PROCEDURE send_notification(p_auction_id integer, p_item_id integer)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_auction_status VARCHAR(20);
+    v_auction_end TIMESTAMP;
+    v_item_title VARCHAR(255);
+    v_current_highest_bid NUMERIC(10,2);
+    v_seller_id INTEGER;
+    v_current_highest_bidder INTEGER;
+    v_seller_email VARCHAR(100);
+    v_seller_mobile VARCHAR(20);
+    v_buyer_email VARCHAR(100);
+BEGIN
+    -- Retrieve auction details
+    SELECT status, end_time 
+      INTO v_auction_status, v_auction_end
+      FROM auctions
+     WHERE auction_id = p_auction_id;
+     
+    -- Retrieve item details, including seller and highest bid info
+    SELECT title, current_highest_bid, seller_id, current_highest_bidder
+      INTO v_item_title, v_current_highest_bid, v_seller_id, v_current_highest_bidder
+      FROM items
+     WHERE item_id = p_item_id;
+     
+    -- Retrieve seller contact information
+    SELECT email, mobile_number
+      INTO v_seller_email, v_seller_mobile
+      FROM users
+     WHERE user_id = v_seller_id;
+     
+    -- If a winning bid exists, look up the buyer's details and simulate notifications to both parties.
+    IF v_current_highest_bid IS NOT NULL AND v_current_highest_bidder IS NOT NULL THEN
+        SELECT email
+          INTO v_buyer_email
+          FROM users
+         WHERE user_id = v_current_highest_bidder;
+         
+        RAISE NOTICE 'Auction % for item "%" closed at % with a winning bid of %.',
+                     p_auction_id, v_item_title, v_auction_end, v_current_highest_bid;
+                     
+        RAISE NOTICE 'Notification sent to Seller: [ID: %, Email: %, Mobile: %].',
+                     v_seller_id, v_seller_email, v_seller_mobile;
+                     
+        RAISE NOTICE 'Notification sent to Buyer: [ID: %, Email: %].',
+                     v_current_highest_bidder, v_buyer_email;
+    ELSE
+        -- No bid was placed; notify the seller to relist or take further action.
+        RAISE NOTICE 'Auction % for item "%" closed with no bids. Notification sent to Seller: [ID: %, Email: %, Mobile: %].',
+                     p_auction_id, v_item_title, v_seller_id, v_seller_email, v_seller_mobile;
+    END IF;
+END;
+$$;
